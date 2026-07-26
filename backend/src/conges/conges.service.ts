@@ -7,6 +7,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCongeDto } from './dto/conge.dto';
@@ -16,6 +17,16 @@ import { CongesSoldeService } from './conges-solde.service';
 
 // Re-export pour la compatibilité des contrôleurs existants
 export type { SoldeCongeResult } from './conges-solde.service';
+
+/** Rôles autorisés à consulter/annuler les congés de n'importe quel agent. */
+const PRIVILEGED_ROLES: string[] = [
+  Role.ADMIN,
+  Role.DRH,
+  Role.CHEF_DIVISION,
+  Role.CHEF_SERVICE,
+  Role.DIRECTEUR_GENERAL,
+  Role.PRESIDENT,
+];
 
 const N1_ROLES = [Role.CHEF_SERVICE, Role.CHEF_DIVISION];
 const N2_ROLES = [Role.DRH, Role.DIRECTEUR_GENERAL, Role.PRESIDENT];
@@ -41,10 +52,17 @@ export class CongesService {
   //  Lecture
   // ============================================================
 
-  async findAll(params?: CongeFilters) {
+  async findAll(user: { agentId?: number; role: string }, params?: CongeFilters) {
     const where: Prisma.CongeWhereInput = {};
 
-    if (params?.agentId) where.agentId = Number(params.agentId);
+    // Un agent non-privilégié ne voit que ses propres congés, quel que soit le filtre agentId passé.
+    if (!PRIVILEGED_ROLES.includes(user.role)) {
+      this.requireAgentId(user);
+      where.agentId = user.agentId as number;
+    } else {
+      if (params?.agentId) where.agentId = Number(params.agentId);
+    }
+
     if (params?.statut) where.statut = params.statut;
     if (params?.type) where.type = params.type;
     if (params?.structureId) where.agent = { structureId: Number(params.structureId) };
@@ -107,7 +125,7 @@ export class CongesService {
     return this.prisma.conge.count({ where: { statut: { in: statuts } } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, user?: { agentId?: number; role: string }) {
     const conge = await this.prisma.conge.findUnique({
       where: { id },
       include: {
@@ -117,6 +135,15 @@ export class CongesService {
       },
     });
     if (!conge) throw new NotFoundException('Demande de congé introuvable.');
+
+    // Vérification d'appartenance : un agent simple ne peut voir que ses propres congés.
+    if (user && !PRIVILEGED_ROLES.includes(user.role)) {
+      this.requireAgentId(user);
+      if (conge.agentId !== user.agentId) {
+        throw new ForbiddenException("Vous n'êtes pas autorisé à consulter cette demande.");
+      }
+    }
+
     return conge;
   }
 
@@ -276,8 +303,16 @@ export class CongesService {
     });
   }
 
-  async annuler(id: number, _userId: number) {
-    const conge = await this.findOne(id);
+  async annuler(id: number, userId: number, user?: { agentId?: number; role: string }) {
+    const conge = await this.findOne(id, user);
+
+    // Un agent simple ne peut annuler que ses propres congés.
+    if (user && !PRIVILEGED_ROLES.includes(user.role)) {
+      this.requireAgentId(user);
+      if (conge.agentId !== user.agentId) {
+        throw new ForbiddenException("Vous n'êtes pas autorisé à annuler cette demande.");
+      }
+    }
 
     if (conge.statut === StatutDemande.REFUSEE || conge.statut === StatutDemande.ANNULEE) {
       throw new BadRequestException('Cette demande est déjà close.');
@@ -322,5 +357,15 @@ export class CongesService {
     if ((N1_ROLES as readonly string[]).includes(role)) return [StatutDemande.EN_ATTENTE_N1];
     if ((N2_ROLES as readonly string[]).includes(role)) return [StatutDemande.EN_ATTENTE_N2, StatutDemande.EN_ATTENTE_DRH];
     return [];
+  }
+
+  /**
+   * Lève une ForbiddenException si un utilisateur non-privilégié n'a pas d'agentId associé.
+   * Sans cette vérification, Prisma ignorerait un agentId `undefined` et retournerait tous les enregistrements.
+   */
+  private requireAgentId(user: { agentId?: number; role: string }): asserts user is { agentId: number; role: string } {
+    if (user.agentId == null) {
+      throw new ForbiddenException("Aucun agent associé à ce compte. Accès refusé.");
+    }
   }
 }

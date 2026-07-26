@@ -24,6 +24,7 @@ export class CongesController {
 
   @Get()
   findAll(
+    @CurrentUser() user: any,
     @Query('agentId') agentId?: string,
     @Query('statut') statut?: StatutDemande,
     @Query('type') type?: TypeConge,
@@ -31,7 +32,7 @@ export class CongesController {
     @Query('debut') debut?: string,
     @Query('fin') fin?: string,
   ) {
-    return this.conges.findAll({
+    return this.conges.findAll(user, {
       agentId: agentId ? Number(agentId) : undefined,
       statut,
       type,
@@ -84,8 +85,8 @@ export class CongesController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.conges.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.conges.findOne(id, user);
   }
 
   @Post()
@@ -147,7 +148,7 @@ export class CongesController {
   }
 
   @Post(':id/annuler')
-  annuler(@Param('id', ParseIntPipe) id: number, @CurrentUser('id') userId: number) {
-    return this.conges.annuler(id, userId);
+  annuler(@Param('id', ParseIntPipe) id: number, @CurrentUser('id') userId: number, @CurrentUser() user: any) {
+    return this.conges.annuler(id, userId, user);
   }
 }

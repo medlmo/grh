@@ -67,6 +67,8 @@ export class UtilisateursService {
     await this.findOne(id);
 
     const data: any = { ...dto };
+    delete data.ancienMotDePasse;
+
     if (dto.motDePasse) {
       data.motDePasse = await bcrypt.hash(dto.motDePasse, 10);
     }
