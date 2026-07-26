@@ -1,0 +1,399 @@
+// GRH — Conseil de la Région Souss-Massa
+// Schéma de données (Lot 1 MVP + fondations paramétrables)
+// Basé sur le Statut des Fonctionnaires des Collectivités Territoriales
+// Décret n° 2-06-657 du 30 chaoual 1428 (12 novembre 2007) — Statut particulier
+// Échelles et indices selon la grille de rémunération des collectivités territoriales marocaines
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+//  FONDATIONS : Collectivité, paramétrage administrable
+// ============================================================
+
+enum Langue {
+  FR
+  AR
+}
+
+model Collectivite {
+  id              Int      @id @default(1)
+  nomFr           String   @default("Région Souss-Massa")
+  nomAr           String   @default("جهة سوس ماسة")
+  logoUrl         String?
+  enteteFr        String   @default("Royaume du Maroc — Ministère de l'Intérieur — Région Souss-Massa")
+  enteteAr        String   @default("المملكة المغربية — وزارة الداخلية — جهة سوس ماسة")
+  adresse         String?
+  telephone       String?
+  email           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================================
+//  GRILLE DES FONCTIONS PUBLIQUES MAROCAINE
+//  Hiérarchie : Corps → Cadre → Grade → Échelle → Échelon
+//  Basée sur le Statut des Collectivités Territoriales
+//  Décret n° 2-06-657 du 30 chaoual 1428 (12 novembre 2007)
+//  Arrêté du ministre de l'Intérieur fixant les échelles de rémunération
+// ============================================================
+
+model Corps {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  libelleFr   String
+  libelleAr   String
+  descriptionFr String?
+  descriptionAr String?
+  cadres      Cadre[]
+  agents      Agent[]
+  createdAt   DateTime @default(now())
+}
+
+model Cadre {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  libelleFr   String
+  libelleAr   String
+  descriptionFr String?
+  descriptionAr String?
+  corpsId     Int
+  corps       Corps    @relation(fields: [corpsId], references: [id])
+  grades      Grade[]
+  agents      Agent[]
+  createdAt   DateTime @default(now())
+}
+
+model Grade {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  libelleFr   String
+  libelleAr   String
+  descriptionFr String?
+  descriptionAr String?
+  cadreId     Int
+  cadre       Cadre    @relation(fields: [cadreId], references: [id])
+  echelles    Echelle[]
+  agents      Agent[]
+  createdAt   DateTime @default(now())
+}
+
+model Echelle {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  numero      Int      // Numéro d'échelle (ex: 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
+  libelleFr   String   // "Échelle 11"
+  libelleAr   String   // "السلم 11"
+  gradeId     Int
+  grade       Grade    @relation(fields: [gradeId], references: [id])
+  echelons    Echelon[]
+  agents      Agent[]
+  createdAt   DateTime @default(now())
+  @@unique([gradeId, numero])
+}
+
+model Echelon {
+  id            Int      @id @default(autoincrement())
+  echelleId     Int
+  echelle       Echelle  @relation(fields: [echelleId], references: [id])
+  numero        Int      // Numéro d'échelon (1, 2, 3...)
+  indice        Int      // Indice de rémunération (ex: 509, 545, 581...)
+  dureeMinMois  Int      @default(24) // Ancienneté minimale pour avancement
+  agents        Agent[]
+  createdAt     DateTime @default(now())
+  @@unique([echelleId, numero])
+}
+
+model JourFerie {
+  id          Int      @id @default(autoincrement())
+  libelleFr   String
+  libelleAr   String
+  date        DateTime
+  estMobile   Boolean  @default(false) // fête religieuse mobile (hégire)
+  createdAt   DateTime @default(now())
+  @@unique([date])
+}
+
+// ============================================================
+//  UTILISATEURS & RBAC
+// ============================================================
+
+enum Role {
+  AGENT
+  CHEF_SERVICE
+  CHEF_DIVISION
+  DRH
+  DIRECTEUR_GENERAL
+  PRESIDENT
+  ADMIN
+}
+
+enum StatutCompte {
+  ACTIF
+  SUSPENDU
+  BLOQUE
+}
+
+model Utilisateur {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  motDePasse    String
+  role          Role      @default(AGENT)
+  statut        StatutCompte @default(ACTIF)
+  agentId       Int?      @unique
+  agent         Agent?    @relation(fields: [agentId], references: [id])
+  refreshToken  String?
+  derniereConn  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  utilisateurId Int?
+  action      String
+  entite      String
+  entiteId    Int?
+  details     Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+}
+
+// ============================================================
+//  4.1 DOSSIER ADMINISTRATIF DE L'AGENT
+// ============================================================
+
+enum StatutAgent {
+  TITULAIRE
+  STAGIAIRE
+  CONTRACTUEL
+  JOURNALIER
+}
+
+enum StatutCarriere {
+  EN_ACTIVITE
+  DETACHEMENT
+  DISPONIBILITE
+  MIS_A_DISPOSITION
+  REINTEGRATION
+  RETRAITE
+  DEMISSION
+}
+
+model Structure {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  libelleFr   String
+  libelleAr   String
+  type        String    @default("SERVICE") // DIRECTION, DIVISION, SERVICE
+  parentId    Int?
+  parent      Structure? @relation("StructureHierarchie", fields: [parentId], references: [id])
+  enfants     Structure[] @relation("StructureHierarchie")
+  agents      Agent[]
+  createdAt   DateTime @default(now())
+}
+
+model Agent {
+  id                Int       @id @default(autoincrement())
+  matricule         String    @unique
+  cin               String    @unique
+  nomFr             String
+  nomAr             String?
+  prenomFr          String
+  prenomAr          String?
+  nomJeuneFille     String?
+  dateNaissance     DateTime
+  lieuNaissanceFr   String?
+  lieuNaissanceAr   String?
+  sexe              String    @default("M") // M / F
+  nationalite       String    @default("Marocaine")
+
+  // Situation familiale
+  situationFamiliale String   @default("CELIBATAIRE")
+  nbEnfants          Int      @default(0)
+
+  // Coordonnées
+  adresseFr          String?
+  adresseAr          String?
+  telephone          String?
+  email              String?
+
+  // Statut & carrière courante
+  statut             StatutAgent @default(TITULAIRE)
+  statutCarriere     StatutCarriere @default(EN_ACTIVITE)
+  dateRecrutement    DateTime
+  dateTitularisation DateTime?
+  dateFinContrat     DateTime?
+
+  // Positionnement grille (hiérarchie marocaine)
+  corpsId            Int
+  corps              Corps     @relation(fields: [corpsId], references: [id])
+  cadreId            Int?
+  cadre              Cadre?    @relation(fields: [cadreId], references: [id])
+  gradeId            Int?
+  grade              Grade?    @relation(fields: [gradeId], references: [id])
+  echelleId          Int?
+  echelle            Echelle?  @relation(fields: [echelleId], references: [id])
+  echelonId          Int?
+  echelon            Echelon?  @relation(fields: [echelonId], references: [id])
+  indice             Int?
+
+  // Retraite
+  caisseRetraite     String    @default("CMR") // CMR / RCAR
+  matriculeRetraite  String?
+
+  // Affectation
+  structureId        Int?
+  structure          Structure? @relation(fields: [structureId], references: [id])
+  fonctionFr         String?
+  fonctionAr         String?
+
+  utilisateur        Utilisateur?
+  diplomes           Diplome[]
+  carriereHistorique CarriereHistorique[]
+  piecesJointes      PieceJointe[]
+  conges             Conge[]
+  soldeConge         SoldeConge?
+  decisions          DecisionAdmin[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Diplome {
+  id          Int      @id @default(autoincrement())
+  agentId     Int
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  intituleFr  String
+  intituleAr  String?
+  etablissement String?
+  anneeObtention Int?
+  createdAt   DateTime @default(now())
+}
+
+model CarriereHistorique {
+  id          Int      @id @default(autoincrement())
+  agentId     Int
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  dateEffet   DateTime
+  evenement   String   // TITULARISATION, AVANCEMENT_ECHELON, AVANCEMENT_GRADE, AFFECTATION, DETACHEMENT...
+  descriptionFr String?
+  descriptionAr String?
+  gradeAvantId   Int?
+  gradeApresId   Int?
+  echelonAvant   Int?
+  echelonApres   Int?
+  createdAt   DateTime @default(now())
+}
+
+model PieceJointe {
+  id          Int      @id @default(autoincrement())
+  agentId     Int
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  type        String   // CIN, DIPLOME, ACTE_NAISSANCE, ARRETE, AUTRE
+  nomFichier  String
+  chemin       String
+  mimeType    String
+  taille      Int
+  createdAt   DateTime @default(now())
+}
+
+// ============================================================
+//  4.3 CONGÉS & ABSENCES
+// ============================================================
+
+enum TypeConge {
+  ANNUEL
+  MALADIE_COURTE          // ≤ 6 mois (Art. 43)
+  MALADIE_MOYENNE         // ≤ 3 ans (Art. 44)
+  MALADIE_LONGUE          // ≤ 5 ans (Art. 45)
+  MATERNITE
+  PATERNITE
+  SANS_SOLDE
+  AUTORISATION_ABSENCE
+  EXCEPTIONNEL
+}
+
+enum StatutDemande {
+  BROUILLON
+  EN_ATTENTE_N1
+  EN_ATTENTE_N2
+  EN_ATTENTE_DRH
+  APPROUVEE
+  REFUSEE
+  ANNULEE
+}
+
+model TypeCongeConfig {
+  id              Int      @id @default(autoincrement())
+  type            TypeConge @unique
+  libelleFr       String
+  libelleAr       String
+  dureeMaxJours   Int?
+  avecSolde       Boolean  @default(true)
+  justificatifRequis Boolean @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model SoldeConge {
+  id          Int      @id @default(autoincrement())
+  agentId     Int      @unique
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  droitsAnnuels Float
+  soldeReporte  Float   @default(0)
+  prisExercice  Float   @default(0)
+  exercice      Int
+  updatedAt   DateTime @updatedAt
+}
+
+model Conge {
+  id              Int      @id @default(autoincrement())
+  agentId         Int
+  agent           Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  type            TypeConge
+  dateDebut       DateTime
+  dateFin         DateTime
+  nombreJours     Float
+  motif           String?
+  adresseCongeFr  String?
+  adresseCongeAr  String?
+  justificatifUrl String?
+  statut          StatutDemande @default(BROUILLON)
+  demandeurId     Int
+  // Workflow hiérarchique
+  dateSoumission  DateTime?
+  valideN1Par     Int?
+  valideN1Le      DateTime?
+  valideN2Par     Int?
+  valideN2Le      DateTime?
+  valideDrhPar    Int?
+  valideDrhLe     DateTime?
+  refusePar       Int?
+  refuseLe        DateTime?
+  motifRefus      String?
+  commentaire     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DecisionAdmin {
+  id              Int      @id @default(autoincrement())
+  numero          String   @unique
+  type            String   // NOMINATION, AVANCEMENT, CONGE, SANCTION...
+  agentId         Int
+  agent           Agent    @relation(fields: [agentId], references: [id])
+  objetFr         String
+  objetAr         String?
+  contenuFr       String?
+  contenuAr       String?
+  dateEffet       DateTime
+  dateSignature   DateTime?
+  signataireId    Int?
+  congeId         Int?     @unique
+  createdAt       DateTime @default(now())
+}

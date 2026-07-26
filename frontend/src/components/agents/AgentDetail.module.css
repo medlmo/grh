@@ -1,0 +1,751 @@
+/* ============================================================
+/* ============================================================
+   Agent Detail — Enhanced Profile Styles
+   ============================================================ */
+
+.detail-grid-enhanced {
+  grid-template-columns: 320px 1fr;
+}
+
+/* Profile Card with Cover */
+.agent-profile-card-enhanced {
+  overflow: hidden;
+  padding: 0;
+}
+
+.profile-cover {
+  height: 80px;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-600) 100%);
+  position: relative;
+}
+
+.profile-cover::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.profile-avatar-section {
+  text-align: center;
+  padding: 0 20px 20px;
+  margin-top: -40px;
+  position: relative;
+}
+
+.agent-avatar-lg-enhanced {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 28px;
+  margin: 0 auto 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 4px solid white;
+  position: relative;
+  z-index: 1;
+}
+
+.agent-name-lg {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.agent-function-enhanced {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.profile-badges {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Profile Quick Info */
+.profile-quick-info {
+  padding: 0 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+  margin: 0 20px;
+}
+
+.profile-quick-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-quick-item svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.profile-quick-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.profile-quick-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.profile-quick-value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Profile Contact Card */
+.profile-contact-card {
+  padding: 20px;
+}
+
+.profile-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profile-card-title svg {
+  color: var(--primary-500);
+}
+
+.profile-contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+a.profile-contact-item:hover {
+  background: var(--gray-50);
+  color: var(--primary-500);
+}
+
+.profile-contact-item svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.profile-no-contact {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px;
+}
+
+/* Enhanced Tabs */
+.tabs-enhanced {
+  padding: 0 24px;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.tabs-enhanced .tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 16px;
+  white-space: nowrap;
+}
+
+.tab-icon {
+  display: flex;
+  align-items: center;
+}
+
+.tab-count {
+  background: var(--gray-100);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.tab.active .tab-count {
+  background: var(--primary-50);
+  color: var(--primary-500);
+}
+
+.tab-content {
+  padding: 24px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.2s ease;
+}
+
+/* Info Sections */
+.info-section {
+  margin-bottom: 32px;
+}
+
+.info-section:last-child {
+  margin-bottom: 0;
+}
+
+.info-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.info-section-title svg {
+  color: var(--primary-500);
+  background: var(--primary-50);
+  padding: 5px;
+  border-radius: var(--radius-md);
+  width: 30px;
+  height: 30px;
+}
+
+/* Info Cards Grid */
+.info-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.info-card-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+}
+
+.info-card-item:hover {
+  background: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.info-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-500);
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.info-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.info-card-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.info-card-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dates Grid */
+.dates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.date-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid;
+  position: relative;
+  overflow: hidden;
+}
+
+.date-card.accent {
+  background: linear-gradient(135deg, var(--accent-50) 0%, white 100%);
+  border-color: var(--accent-100);
+}
+
+.date-card.primary {
+  background: linear-gradient(135deg, var(--primary-50) 0%, white 100%);
+  border-color: var(--primary-100);
+}
+
+.date-card.warning {
+  background: linear-gradient(135deg, #fffbeb 0%, white 100%);
+  border-color: #fde68a;
+}
+
+.date-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.date-card.accent .date-card-icon {
+  background: var(--accent-100);
+  color: var(--accent-600);
+}
+
+.date-card.primary .date-card-icon {
+  background: var(--primary-100);
+  color: var(--primary-500);
+}
+
+.date-card.warning .date-card-icon {
+  background: #fef3c7;
+  color: var(--warning);
+}
+
+.date-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.date-card.accent .date-card-label { color: var(--accent-700); }
+.date-card.primary .date-card-label { color: var(--primary-600); }
+.date-card.warning .date-card-label { color: #92400e; }
+
+.date-card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Timeline (Career History) */
+.timeline {
+  position: relative;
+  padding-inline-start: 8px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 7px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--border-color);
+}
+
+.timeline-item {
+  position: relative;
+  padding-inline-start: 32px;
+  padding-bottom: 24px;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-dot {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid var(--gray-300);
+  z-index: 1;
+}
+
+.timeline-item.latest .timeline-dot {
+  border-color: var(--accent-500);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+}
+
+.timeline-content {
+  background: var(--gray-50);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: all var(--transition-fast);
+}
+
+.timeline-content:hover {
+  background: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.timeline-event {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.timeline-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.timeline-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.timeline-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: white;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+/* Diplomas Grid */
+.diplomas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.diploma-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  background: linear-gradient(135deg, var(--primary-50) 0%, white 100%);
+  border: 1px solid var(--primary-100);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.diploma-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.diploma-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--primary-100);
+  color: var(--primary-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.diploma-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.diploma-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.diploma-institution {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.diploma-year {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--accent-600);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Documents List */
+.documents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--gray-50);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.document-item:hover {
+  background: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.document-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--primary-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.document-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.document-type {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--primary-500);
+}
+
+.document-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Contact Cards Grid */
+.contact-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.contact-card-link {
+  text-decoration: none;
+}
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  background: var(--gray-50);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+a.contact-card-link:hover .contact-card {
+  background: white;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.contact-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contact-card-icon.blue {
+  background: #eff6ff;
+  color: var(--info);
+}
+
+.contact-card-icon.green {
+  background: #ecfdf5;
+  color: var(--success);
+}
+
+.contact-card-icon.gold {
+  background: #fffbeb;
+  color: var(--gold-500);
+}
+
+.contact-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.contact-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.contact-card-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Small Empty State */
+.empty-state-sm {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-state-sm svg {
+  width: 48px;
+  height: 48px;
+  color: var(--gray-300);
+  margin-bottom: 12px;
+}
+
+.empty-state-sm p {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Responsive for Agent Detail */
+@media (max-width: 1024px) {
+  .detail-grid-enhanced {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .info-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .diplomas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tabs-enhanced {
+    padding: 0 12px;
+  }
+
+  .tabs-enhanced .tab {
+    padding: 12px 10px;
+    font-size: 12px;
+  }
+}

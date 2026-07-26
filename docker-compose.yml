@@ -1,0 +1,66 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: grh_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: grh_souss_massa
+      POSTGRES_USER: grh
+      POSTGRES_PASSWORD: grh_local_pwd
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grh -d grh_souss_massa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: grh_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    container_name: grh_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: "postgresql://grh:grh_local_pwd@db:5432/grh_souss_massa?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: "change-me-in-production-please"
+      JWT_ACCESS_EXPIRES: "15m"
+      JWT_REFRESH_EXPIRES: "7d"
+      PORT: "4000"
+      CORS_ORIGIN: "http://localhost:5173"
+    ports:
+      - "4000:4000"
+    command: sh -c "npx prisma db push && npx prisma db seed && node dist/src/main.js"
+
+  frontend:
+    build:
+      context: ./frontend
+      target: build
+    command: npm run dev -- --host 0.0.0.0
+    container_name: grh_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_PROXY=http://backend:4000
+    ports:
+      - "5173:5173"
+
+volumes:
+  pgdata:
