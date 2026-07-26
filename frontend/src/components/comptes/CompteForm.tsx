@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, Mail, ShieldAlert, KeyRound } from 'lucide-react';
 import api from '../../api/client';
+import styles from './CompteForm.module.css';
 
 const CompteForm: React.FC = () => {
   const { id } = useParams();
@@ -81,7 +82,7 @@ const CompteForm: React.FC = () => {
   };
 
   return (
-    <div className="compte-form-page">
+    <div className={styles.page}>
       <div className="page-header">
         <div className="flex items-center gap-4">
           <Link to="/comptes" className="btn-icon text-gray-500 hover:text-gray-900 bg-white shadow-sm border border-gray-200">
@@ -105,7 +106,7 @@ const CompteForm: React.FC = () => {
               <div className="form-group form-floating">
                 <input 
                   type="email" 
-                  className="form-control" 
+                  className="form-input" 
                   placeholder="Email"
                   required
                   value={formData.email}
@@ -117,7 +118,7 @@ const CompteForm: React.FC = () => {
               <div className="form-group form-floating">
                 <input 
                   type="password" 
-                  className="form-control" 
+                  className="form-input" 
                   placeholder="Mot de passe"
                   required={!isEdit}
                   minLength={6}
@@ -137,7 +138,7 @@ const CompteForm: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-group form-floating">
                 <select 
-                  className="form-control"
+                  className="form-select"
                   value={formData.role}
                   onChange={(e) => setFormData({...formData, role: e.target.value})}
                 >
@@ -154,7 +155,7 @@ const CompteForm: React.FC = () => {
 
               <div className="form-group form-floating">
                 <select 
-                  className="form-control"
+                  className="form-select"
                   value={formData.statut}
                   onChange={(e) => setFormData({...formData, statut: e.target.value})}
                 >
@@ -167,7 +168,7 @@ const CompteForm: React.FC = () => {
               
               <div className="form-group form-floating md:col-span-2">
                 <select 
-                  className="form-control"
+                  className="form-select"
                   value={formData.agentId}
                   onChange={(e) => setFormData({...formData, agentId: e.target.value})}
                 >

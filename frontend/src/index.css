@@ -1361,6 +1361,35 @@ input, select, textarea {
   }
 }
 /* ============================================================
+   Shared agent stat-card layout utilities
+   (used by StatsCard, AgentForm, and Agents pages)
+   ============================================================ */
+.stat-card-enhanced {
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.stat-card-top-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.stats-grid-agents {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+/* Page subtitle (shared across agent pages) */
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* ============================================================
    Animations
    ============================================================ */
 .animate-fade-in {

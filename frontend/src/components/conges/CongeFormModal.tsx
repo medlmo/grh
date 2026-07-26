@@ -3,6 +3,7 @@ import { XCircle, AlertCircle, Send } from 'lucide-react';
 import { TFunction } from 'i18next';
 import { TypeConfig } from '../../types/conges';
 import { typeLabel, TYPE_ORDER } from '../../utils/congesHelpers';
+import styles from './CongeFormModal.module.css';
 
 interface CongeFormModalProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ const CongeFormModal: React.FC<CongeFormModalProps> = ({
         </div>
         <div className="modal-body">
           {formError && (
-            <div className="login-error mb-4">
+            <div className={`${styles.formError} mb-4`}>
               <AlertCircle size={16} className="inline mr-2" />
               {formError}
             </div>

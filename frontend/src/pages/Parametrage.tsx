@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import styles from './Parametrage.module.css';
 import { Building2, Layers, Briefcase, Calendar } from 'lucide-react';
 import FeriesTab from '../components/parametrage/FeriesTab';
 
@@ -25,7 +26,7 @@ const Parametrage: React.FC = () => {
   }, []);
 
   return (
-    <div className="parametrage-page">
+    <div className={styles.page}>
       <div className="page-header">
         <h1>{t('nav.parametrage')}</h1>
       </div>

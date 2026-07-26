@@ -1,0 +1,15 @@
+/* CongeFormModal — scoped styles */
+
+/* Error alert (fixes broken reference to Login.module.css's loginError) */
+.formError {
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  border: 1px solid #fecaca;
+  animation: shake 0.4s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import styles from './Dashboard.module.css';
 import { 
   Users, 
   UserCheck, 
@@ -54,7 +55,7 @@ const Dashboard: React.FC = () => {
   const GENDER_COLORS = { M: '#3b82f6', F: '#ec4899' };
 
   return (
-    <div className="dashboard pb-8">
+    <div className={`${styles.page} pb-8`}>
       <div className="page-header">
         <h1>{t('nav.dashboard')}</h1>
       </div>

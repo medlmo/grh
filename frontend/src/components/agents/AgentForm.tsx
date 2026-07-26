@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import api from '../../api/client';
 import { STATUT_STYLES } from '../../utils/agentHelpers';
+import styles from './AgentForm.module.css';
 
 const AgentForm: React.FC = () => {
   const { id } = useParams();
@@ -294,7 +295,7 @@ const AgentForm: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="agents-page">
+      <div className={styles.page}>
         <div className="page-header">
           <div className="flex items-center gap-4">
             <Link
@@ -314,7 +315,7 @@ const AgentForm: React.FC = () => {
   }
 
   return (
-    <div className="agents-page">
+    <div className={styles.page}>
       {/* Page Header */}
       <div className="page-header">
         <div className="flex items-center gap-4">

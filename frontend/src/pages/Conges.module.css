@@ -1,0 +1,4 @@
+/* Conges — page wrapper scoped */
+.page {
+  /* Scoped page wrapper — no global collision */
+}

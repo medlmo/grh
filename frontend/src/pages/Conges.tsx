@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import styles from './Conges.module.css';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { XCircle, AlertCircle, Bell } from 'lucide-react';
@@ -166,7 +167,7 @@ const Conges: React.FC = () => {
   };
 
   return (
-    <div className="conges-page">
+    <div className={styles.page}>
       <div className="page-header">
         <h1>{t('conges.title')}</h1>
       </div>

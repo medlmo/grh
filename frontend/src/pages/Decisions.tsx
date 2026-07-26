@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import styles from './Decisions.module.css';
 import { Plus, Search, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -25,7 +26,7 @@ const Decisions: React.FC = () => {
   }, []);
 
   return (
-    <div className="decisions-page">
+    <div className={styles.page}>
       <div className="page-header">
         <h1>{t('nav.decisions')}</h1>
         <button className="btn btn-primary">

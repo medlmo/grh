@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import styles from './Comptes.module.css';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Routes, Route, Link } from 'react-router-dom';
 import CompteForm from '../components/comptes/CompteForm';
@@ -44,7 +45,7 @@ const ComptesList: React.FC = () => {
   };
 
   return (
-    <div className="comptes-page">
+    <div className={styles.page}>
       <div className="page-header">
         <h1>Comptes & Accès</h1>
         <div className="page-actions">
