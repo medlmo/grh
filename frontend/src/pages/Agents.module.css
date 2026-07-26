@@ -1,6 +1,11 @@
 /*    Agents Page — Enhanced Styles
    ============================================================ */
 
+/* Page wrapper */
+.agents-page {
+  /* Scoped page wrapper */
+}
+
 /* Page subtitle */
 .page-subtitle {
   font-size: 13px;

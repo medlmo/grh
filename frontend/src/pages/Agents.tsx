@@ -157,13 +157,13 @@ const AgentsList: React.FC = () => {
   const stats = useMemo(() => computeStats(agents), [agents]);
 
   const StatusBar = ({ pct, bg }: { pct: number; bg: string }) => (
-    <div className={`${styles['stat-dist-bar']}`}>
-      <div className={`stat-dist-fill ${bg}`} style={{ width: `${pct}%` }} />
+    <div className={styles['stat-dist-bar']}>
+      <div className={`${styles['stat-dist-fill']} ${bg}`} style={{ width: `${pct}%` }} />
     </div>
   );
 
   return (
-    <div className={`${styles['agents-page']}`}>
+    <div className={styles['agents-page']}>
       <div className="page-header">
         <div>
           <h1>{t('agents.title')}</h1>
@@ -180,10 +180,10 @@ const AgentsList: React.FC = () => {
       <div className={`stats-grid ${styles['stats-grid-agents']}`}>
         <div className={`stat-card ${styles['stat-card-enhanced']} blue`}>
           <div className={`${styles['stat-card-top-row']}`}>
-            <div className={`${styles['stat-icon']} blue`}><Users /></div>
-            <div className={`${styles['stat-content']}`}>
-              <div className={`${styles['stat-value']}`}>{stats.total}</div>
-              <div className={`${styles['stat-label']}`}>{t('agents.total')}</div>
+            <div className={`stat-icon blue`}><Users /></div>
+            <div className={`stat-content`}>
+              <div className={`stat-value`}>{stats.total}</div>
+              <div className={`stat-label`}>{t('agents.total')}</div>
             </div>
           </div>
           {stats.total > 0 && (
@@ -198,10 +198,10 @@ const AgentsList: React.FC = () => {
         </div>
         <div className={`stat-card ${styles['stat-card-enhanced']} green`}>
           <div className={`${styles['stat-card-top-row']}`}>
-            <div className={`${styles['stat-icon']} green`}><UserCheck /></div>
-            <div className={`${styles['stat-content']}`}>
-              <div className={`${styles['stat-value']}`}>{stats.titulaires}</div>
-              <div className={`${styles['stat-label']}`}>{t('agents.titulaires')}</div>
+            <div className={`stat-icon green`}><UserCheck /></div>
+            <div className={`stat-content`}>
+              <div className={`stat-value`}>{stats.titulaires}</div>
+              <div className={`stat-label`}>{t('agents.titulaires')}</div>
             </div>
           </div>
           {stats.total > 0 && (
@@ -213,10 +213,10 @@ const AgentsList: React.FC = () => {
         </div>
         <div className={`stat-card ${styles['stat-card-enhanced']} gold`}>
           <div className={`${styles['stat-card-top-row']}`}>
-            <div className={`${styles['stat-icon']} gold`}><Clock /></div>
-            <div className={`${styles['stat-content']}`}>
-              <div className={`${styles['stat-value']}`}>{stats.stagiaires}</div>
-              <div className={`${styles['stat-label']}`}>{t('agents.stagiaires')}</div>
+            <div className={`stat-icon gold`}><Clock /></div>
+            <div className={`stat-content`}>
+              <div className={`stat-value`}>{stats.stagiaires}</div>
+              <div className={`stat-label`}>{t('agents.stagiaires')}</div>
             </div>
           </div>
           {stats.total > 0 && (
@@ -228,10 +228,10 @@ const AgentsList: React.FC = () => {
         </div>
         <div className={`stat-card ${styles['stat-card-enhanced']} red`}>
           <div className={`${styles['stat-card-top-row']}`}>
-            <div className={`${styles['stat-icon']} red`}><FileUser /></div>
-            <div className={`${styles['stat-content']}`}>
-              <div className={`${styles['stat-value']}`}>{stats.contractuels}</div>
-              <div className={`${styles['stat-label']}`}>{t('agents.contractuels')}</div>
+            <div className={`stat-icon red`}><FileUser /></div>
+            <div className={`stat-content`}>
+              <div className={`stat-value`}>{stats.contractuels}</div>
+              <div className={`stat-label`}>{t('agents.contractuels')}</div>
             </div>
           </div>
           {stats.total > 0 && (
@@ -245,31 +245,31 @@ const AgentsList: React.FC = () => {
 
       <div className="card">
         <div className={`card-header ${styles['agents-filter-header']}`}>
-          <div className={`${styles['filters-bar']} w-full mb-0`}>
-            <div className={`${styles['search-input']}`}>
+          <div className={`filters-bar w-full mb-0`}>
+            <div className={`search-input`}>
               <Search />
               <input type="text" placeholder={t('common.search')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <select className={`${styles['filter-select']}`} value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}>
+            <select className={`filter-select`} value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}>
               <option value="">{t('agents.all_statuses')}</option>
               <option value="TITULAIRE">{t('agents.titulaires')}</option>
               <option value="STAGIAIRE">{t('agents.stagiaires')}</option>
               <option value="CONTRACTUEL">{t('agents.contractuels')}</option>
               <option value="JOURNALIER">{t('agents.contractuels')}</option>
             </select>
-            <select className={`${styles['filter-select']}`} value={filterStructure} onChange={(e) => setFilterStructure(e.target.value)}>
+            <select className={`filter-select`} value={filterStructure} onChange={(e) => setFilterStructure(e.target.value)}>
               <option value="">{t('agents.all_structures')}</option>
               {structures.map((s) => (<option key={s.id} value={s.id}>{s.libelleFr}</option>))}
             </select>
-            <button className={`btn btn-outline btn-advanced-filters ${showAdvancedFilters ? 'active' : ''}`} onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}>
+            <button className={`btn btn-outline ${styles['btn-advanced-filters']} ${showAdvancedFilters ? styles.active : ''}`} onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}>
               <SlidersHorizontal size={16} />
               {t('agents.advanced_filters')}
               {activeFilterCount > 0 && <span className={`${styles['filter-count-badge']}`}>{activeFilterCount}</span>}
-              <ChevronDown size={14} className={`chevron-rotate ${showAdvancedFilters ? 'rotated' : ''}`} />
+              <ChevronDown size={14} className={`${styles['chevron-rotate']} ${showAdvancedFilters ? styles.rotated : ''}`} />
             </button>
             <div className={`${styles['view-toggle']}`}>
-              <button className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')} title={t('agents.view_table')}><List size={18} /></button>
-              <button className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')} title={t('agents.view_grid')}><LayoutGrid size={18} /></button>
+              <button className={`${styles['view-toggle-btn']} ${viewMode === 'table' ? styles.active : ''}`} onClick={() => setViewMode('table')} title={t('agents.view_table')}><List size={18} /></button>
+              <button className={`${styles['view-toggle-btn']} ${viewMode === 'grid' ? styles.active : ''}`} onClick={() => setViewMode('grid')} title={t('agents.view_grid')}><LayoutGrid size={18} /></button>
             </div>
           </div>
         </div>
@@ -289,7 +289,7 @@ const AgentsList: React.FC = () => {
             <div className={`${styles['advanced-filters-grid']}`}>
               <div className={`${styles['filter-group']}`}>
                 <label className={`${styles['filter-group-label']}`}><Venus size={14} />{t('agents.filter_by_gender')}</label>
-                <select className={`${styles['filter-select']} w-full`} value={filterGender} onChange={(e) => setFilterGender(e.target.value)}>
+                <select className={`filter-select w-full`} value={filterGender} onChange={(e) => setFilterGender(e.target.value)}>
                   <option value="">{t('agents.all_genders')}</option>
                   <option value="M">{t('agents.masculine')}</option>
                   <option value="F">{t('agents.feminine')}</option>
@@ -297,7 +297,7 @@ const AgentsList: React.FC = () => {
               </div>
               <div className={`${styles['filter-group']}`}>
                 <label className={`${styles['filter-group-label']}`}><Briefcase size={14} />{t('agents.filter_by_career')}</label>
-                <select className={`${styles['filter-select']} w-full`} value={filterCarriere} onChange={(e) => setFilterCarriere(e.target.value)}>
+                <select className={`filter-select w-full`} value={filterCarriere} onChange={(e) => setFilterCarriere(e.target.value)}>
                   <option value="">{t('agents.all_career_statuses')}</option>
                   <option value="EN_ACTIVITE">{t('agents.en_activite')}</option>
                   <option value="DETACHEMENT">{t('agents.detachment')}</option>
@@ -307,7 +307,7 @@ const AgentsList: React.FC = () => {
               </div>
               <div className={`${styles['filter-group']}`}>
                 <label className={`${styles['filter-group-label']}`}><ArrowUpDown size={14} />{t('agents.sort_by')}</label>
-                <select className={`${styles['filter-select']} w-full`} value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}>
+                <select className={`filter-select w-full`} value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}>
                   <option value="name">{t('agents.sort_name')}</option>
                   <option value="name_desc">{t('agents.sort_name_desc')}</option>
                   <option value="matricule">{t('agents.sort_matricule')}</option>
@@ -322,9 +322,9 @@ const AgentsList: React.FC = () => {
         {isLoading ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>
         ) : filteredAgents.length === 0 ? (
-          <div className={`${styles['empty-state']}`}><Users /><h3>{t('agents.no_agents')}</h3><p>{t('agents.no_agents_desc')}</p></div>
+          <div className={`empty-state`}><Users /><h3>{t('agents.no_agents')}</h3><p>{t('agents.no_agents_desc')}</p></div>
         ) : viewMode === 'table' ? (
-          <div className={`${styles['table-container']}`}>
+          <div className={`table-container`}>
             <table className={`data-table ${styles['agents-table']}`}>
               <thead>
                 <tr>

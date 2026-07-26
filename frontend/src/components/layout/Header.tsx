@@ -47,15 +47,15 @@ const Header: React.FC<HeaderProps> = ({ sidebarCollapsed, onToggleMobile }) => 
 
       <div className={styles.headerRight}>
         {/* Language Switcher */}
-        <div className="lang-switch mr-4">
-          <button 
-            className={`lang-btn ${i18n.language === 'fr' ? 'active' : ''}`}
+        <div className={styles.langSwitch}>
+          <button
+            className={`${styles.langBtn} ${i18n.language === 'fr' ? styles.langBtnActive : ''}`}
             onClick={() => changeLanguage('fr')}
           >
             FR
           </button>
-          <button 
-            className={`lang-btn ${i18n.language === 'ar' ? 'active' : ''}`}
+          <button
+            className={`${styles.langBtn} ${i18n.language === 'ar' ? styles.langBtnActive : ''}`}
             onClick={() => changeLanguage('ar')}
           >
             AR

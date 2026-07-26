@@ -85,14 +85,14 @@ const Login: React.FC = () => {
 
         <div className="flex justify-center mt-6">
           <div className={styles['lang-switch']}>
-            <button 
-              className={`${styles['lang-btn']} ${i18n.language === 'fr' ? styles.active : ''}`}
+            <button
+              className={`${styles['lang-btn']} ${i18n.language === 'fr' ? styles.langBtnActive : ''}`}
               onClick={() => i18n.changeLanguage('fr')}
             >
               Français
             </button>
-            <button 
-              className={`${styles['lang-btn']} ${i18n.language === 'ar' ? styles.active : ''}`}
+            <button
+              className={`${styles['lang-btn']} ${i18n.language === 'ar' ? styles.langBtnActive : ''}`}
               onClick={() => i18n.changeLanguage('ar')}
             >
               العربية
