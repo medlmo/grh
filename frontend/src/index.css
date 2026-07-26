@@ -1361,6 +1361,25 @@ input, select, textarea {
   }
 }
 /* ============================================================
+   Form field-level validation error
+   ============================================================ */
+.form-error-msg {
+  font-size: 12px;
+  color: var(--danger);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: fadeIn 0.15s ease;
+}
+
+.form-group.has-error .form-input,
+.form-group.has-error .form-select {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* ============================================================
    Shared agent stat-card layout utilities
    (used by StatsCard, AgentForm, and Agents pages)
    ============================================================ */

@@ -86,6 +86,7 @@ const AgentForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Diplômes (modifiables)
   const [diplomes, setDiplomes] = useState<any[]>([]);
@@ -223,8 +224,56 @@ const AgentForm: React.FC = () => {
     if (value) loadEchelons(Number(value));
   };
 
+  const clearFieldError = (field: string) =>
+    setFormErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev));
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.nomFr.trim()) errors.nomFr = 'Le nom est obligatoire.';
+    if (!formData.prenomFr.trim()) errors.prenomFr = 'Le prénom est obligatoire.';
+    if (!formData.matricule.trim()) errors.matricule = 'Le matricule est obligatoire.';
+
+    if (!formData.cin.trim()) {
+      errors.cin = 'Le CIN est obligatoire.';
+    } else if (!/^[A-Za-z]{1,2}\d{2,7}$/.test(formData.cin.trim())) {
+      errors.cin = 'Format CIN invalide (ex : AB123456).';
+    }
+
+    if (!formData.corpsId) {
+      errors.corpsId = "Le corps d'appartenance est obligatoire.";
+    }
+
+    if (!formData.dateNaissance) {
+      errors.dateNaissance = 'La date de naissance est obligatoire.';
+    } else {
+      const dob = new Date(formData.dateNaissance);
+      const today = new Date();
+      const ageFull =
+        today.getFullYear() -
+        dob.getFullYear() -
+        (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate()) ? 1 : 0);
+      if (dob >= today) errors.dateNaissance = 'La date de naissance doit être dans le passé.';
+      else if (ageFull < 18) errors.dateNaissance = "L'agent doit avoir au moins 18 ans.";
+    }
+
+    if (!formData.dateRecrutement) {
+      errors.dateRecrutement = 'La date de recrutement est obligatoire.';
+    } else if (formData.dateNaissance) {
+      const dob = new Date(formData.dateNaissance);
+      const drec = new Date(formData.dateRecrutement);
+      if (drec <= dob) {
+        errors.dateRecrutement = 'La date de recrutement doit être postérieure à la naissance.';
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     setIsSubmitting(true);
     setError('');
 
@@ -435,16 +484,16 @@ const AgentForm: React.FC = () => {
                 Identité
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="form-group form-floating">
+                <div className={`form-group form-floating${formErrors.nomFr ? ' has-error' : ''}`}>
                   <input
                     type="text"
                     className="form-input"
                     placeholder=" "
-                    required
                     value={formData.nomFr}
-                    onChange={(e) => setFormData({ ...formData, nomFr: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, nomFr: e.target.value }); clearFieldError('nomFr'); }}
                   />
                   <label>Nom (Fr) <span className="form-required">*</span></label>
+                  {formErrors.nomFr && <p className="form-error-msg">{formErrors.nomFr}</p>}
                 </div>
                 <div className="form-group form-floating">
                   <input
@@ -456,16 +505,16 @@ const AgentForm: React.FC = () => {
                   />
                   <label>Nom (Ar)</label>
                 </div>
-                <div className="form-group form-floating">
+                <div className={`form-group form-floating${formErrors.prenomFr ? ' has-error' : ''}`}>
                   <input
                     type="text"
                     className="form-input"
                     placeholder=" "
-                    required
                     value={formData.prenomFr}
-                    onChange={(e) => setFormData({ ...formData, prenomFr: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, prenomFr: e.target.value }); clearFieldError('prenomFr'); }}
                   />
                   <label>Prénom (Fr) <span className="form-required">*</span></label>
+                  {formErrors.prenomFr && <p className="form-error-msg">{formErrors.prenomFr}</p>}
                 </div>
                 <div className="form-group form-floating">
                   <input
@@ -477,16 +526,16 @@ const AgentForm: React.FC = () => {
                   />
                   <label>Prénom (Ar)</label>
                 </div>
-                <div className="form-group form-floating">
+                <div className={`form-group form-floating${formErrors.cin ? ' has-error' : ''}`}>
                   <input
                     type="text"
                     className="form-input"
                     placeholder=" "
-                    required
                     value={formData.cin}
-                    onChange={(e) => setFormData({ ...formData, cin: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, cin: e.target.value }); clearFieldError('cin'); }}
                   />
                   <label>CIN <span className="form-required">*</span></label>
+                  {formErrors.cin && <p className="form-error-msg">{formErrors.cin}</p>}
                 </div>
                 <div className="form-group form-floating">
                   <select
@@ -500,15 +549,15 @@ const AgentForm: React.FC = () => {
                   </select>
                   <label>Sexe <span className="form-required">*</span></label>
                 </div>
-                <div className="form-group form-floating">
+                <div className={`form-group form-floating${formErrors.dateNaissance ? ' has-error' : ''}`}>
                   <input
                     type="date"
                     className="form-input"
-                    required
                     value={formData.dateNaissance}
-                    onChange={(e) => setFormData({ ...formData, dateNaissance: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, dateNaissance: e.target.value }); clearFieldError('dateNaissance'); }}
                   />
                   <label>Date de Naissance <span className="form-required">*</span></label>
+                  {formErrors.dateNaissance && <p className="form-error-msg">{formErrors.dateNaissance}</p>}
                 </div>
                 <div className="form-group form-floating">
                   <input
@@ -640,16 +689,16 @@ const AgentForm: React.FC = () => {
                 Informations Professionnelles
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="form-group form-floating">
+                <div className={`form-group form-floating${formErrors.matricule ? ' has-error' : ''}`}>
                   <input
                     type="text"
                     className="form-input"
                     placeholder=" "
-                    required
                     value={formData.matricule}
-                    onChange={(e) => setFormData({ ...formData, matricule: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, matricule: e.target.value }); clearFieldError('matricule'); }}
                   />
                   <label>Matricule <span className="form-required">*</span></label>
+                  {formErrors.matricule && <p className="form-error-msg">{formErrors.matricule}</p>}
                 </div>
                 <div className="form-group form-floating">
                   <select
@@ -681,15 +730,15 @@ const AgentForm: React.FC = () => {
                   </select>
                   <label>Statut de carrière</label>
                 </div>
-                <div className="form-group form-floating">
+                <div className={`form-group form-floating${formErrors.dateRecrutement ? ' has-error' : ''}`}>
                   <input
                     type="date"
                     className="form-input"
-                    required
                     value={formData.dateRecrutement}
-                    onChange={(e) => setFormData({ ...formData, dateRecrutement: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, dateRecrutement: e.target.value }); clearFieldError('dateRecrutement'); }}
                   />
                   <label>Date de Recrutement <span className="form-required">*</span></label>
+                  {formErrors.dateRecrutement && <p className="form-error-msg">{formErrors.dateRecrutement}</p>}
                 </div>
                 <div className="form-group form-floating">
                   <input
@@ -756,12 +805,11 @@ const AgentForm: React.FC = () => {
                 Positionnement Grille
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="form-group form-floating">
+                <div className={`form-group form-floating${formErrors.corpsId ? ' has-error' : ''}`}>
                   <select
                     className="form-select"
-                    required
                     value={formData.corpsId}
-                    onChange={(e) => handleCorpsChange(e.target.value)}
+                    onChange={(e) => { handleCorpsChange(e.target.value); clearFieldError('corpsId'); }}
                   >
                     <option value="" disabled hidden></option>
                     {corps.map((c) => (
@@ -771,6 +819,7 @@ const AgentForm: React.FC = () => {
                     ))}
                   </select>
                   <label>Corps d'appartenance <span className="form-required">*</span></label>
+                  {formErrors.corpsId && <p className="form-error-msg">{formErrors.corpsId}</p>}
                 </div>
                 <div className="form-group form-floating">
                   <select

@@ -150,6 +150,8 @@ model Utilisateur {
   agent         Agent?    @relation(fields: [agentId], references: [id])
   refreshToken  String?
   derniereConn  DateTime?
+  lastLoginAt          DateTime? // Horodatage de la dernière connexion réussie
+  lastPasswordChange   DateTime? // Pour forcer la rotation et invalider les sessions
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -261,8 +263,18 @@ model Agent {
   conges             Conge[]
   soldeConge         SoldeConge?
   decisions          DecisionAdmin[]
+
+  // Audit trail
+  deletedAt          DateTime? // Soft-delete — archivage réglementaire
+  createdBy          Int?      // Utilisateur créateur du dossier
+  updatedBy          Int?      // Dernier modificateur
+
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+
+  @@index([structureId])
+  @@index([statut])
+  @@index([statutCarriere])
 }
 
 model Diplome {
@@ -274,6 +286,7 @@ model Diplome {
   etablissement String?
   anneeObtention Int?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model CarriereHistorique {
@@ -289,6 +302,9 @@ model CarriereHistorique {
   echelonAvant   Int?
   echelonApres   Int?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([agentId])
 }
 
 model PieceJointe {
@@ -379,6 +395,10 @@ model Conge {
   commentaire     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([statut])
+  @@index([agentId, statut])
 }
 
 model DecisionAdmin {
@@ -396,4 +416,7 @@ model DecisionAdmin {
   signataireId    Int?
   congeId         Int?     @unique
   createdAt       DateTime @default(now())
+
+  @@index([agentId])
+  @@index([dateEffet])
 }

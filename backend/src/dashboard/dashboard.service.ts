@@ -52,26 +52,37 @@ export class DashboardService {
   }
 
   private async getPyramideAges() {
-    const agents = await this.prisma.agent.findMany({ select: { dateNaissance: true, sexe: true } });
-    const tranches = [
-      { label: '<25', min: 0, max: 25 },
-      { label: '25-35', min: 25, max: 35 },
-      { label: '35-45', min: 35, max: 45 },
-      { label: '45-55', min: 45, max: 55 },
-      { label: '55-60', min: 55, max: 60 },
-      { label: '60+', min: 60, max: 200 },
-    ];
-    const now = new Date();
-    return tranches.map((t) => {
-      const liste = agents.filter((a) => {
-        const age = now.getFullYear() - a.dateNaissance.getFullYear();
-        return age >= t.min && age < t.max;
-      });
+    type Row = { tranche: string; total: bigint; hommes: bigint; femmes: bigint };
+
+    // Calcul SQL côté Postgres — EXTRACT(YEAR FROM AGE(...)) donne l'âge réel
+    const rows = await this.prisma.$queryRaw<Row[]>`
+      SELECT
+        CASE
+          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 25 THEN '<25'
+          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 35 THEN '25-35'
+          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 45 THEN '35-45'
+          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 55 THEN '45-55'
+          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 60 THEN '55-60'
+          ELSE '60+'
+        END AS tranche,
+        COUNT(*)                              AS total,
+        COUNT(*) FILTER (WHERE sexe = 'M')   AS hommes,
+        COUNT(*) FILTER (WHERE sexe = 'F')   AS femmes
+      FROM "Agent"
+      GROUP BY tranche
+    `;
+
+    // Ordre affiché même si une tranche est vide
+    const ORDRE = ['<25', '25-35', '35-45', '45-55', '55-60', '60+'];
+    const map = new Map(rows.map((r) => [r.tranche, r]));
+
+    return ORDRE.map((label) => {
+      const r = map.get(label);
       return {
-        tranche: t.label,
-        total: liste.length,
-        hommes: liste.filter((a) => a.sexe === 'M').length,
-        femmes: liste.filter((a) => a.sexe === 'F').length,
+        tranche: label,
+        total: r ? Number(r.total) : 0,
+        hommes: r ? Number(r.hommes) : 0,
+        femmes: r ? Number(r.femmes) : 0,
       };
     });
   }

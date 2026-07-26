@@ -18,14 +18,23 @@ export class AgentsService {
         { cin: { contains: params.search, mode: 'insensitive' } },
       ];
     }
+    // Vue liste : select minimal — évite de charger corps, cadre, echelle inutilement
     return this.prisma.agent.findMany({
       where,
-      include: {
-        structure: true,
-        grade: true,
-        corps: true,
-        cadre: true,
-        echelle: true,
+      select: {
+        id: true,
+        matricule: true,
+        nomFr: true,
+        prenomFr: true,
+        nomAr: true,
+        prenomAr: true,
+        sexe: true,
+        statut: true,
+        statutCarriere: true,
+        fonctionFr: true,
+        createdAt: true,
+        structure: { select: { id: true, libelleFr: true } },
+        grade: { select: { id: true, libelleFr: true } },
       },
       orderBy: { nomFr: 'asc' },
     });
