@@ -232,97 +232,129 @@ const NodeModal: React.FC<NodeModalProps> = ({ modal, allNodes, onClose, onSave 
   }
   const parentOptions = allNodes.filter((n) => !forbidden.has(n.id));
 
+  const accentColor  = isEdit ? '#2563eb' : '#16a34a';
+  const accentBg     = isEdit ? '#dbeafe' : '#dcfce7';
+
   return (
-    <div className={styles['modal-backdrop']} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={styles['modal']}>
-        <div className={styles['modal-header']}>
-          <div className={styles['modal-title']}>
-            {isEdit ? (
-              <><Pencil size={18} /> Modifier l'entité</>
-            ) : (
-              <><Plus size={18} /> Ajouter une entité{parentNode ? ` sous « ${parentNode.libelleFr} »` : ''}</>
-            )}
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 560 }}>
+
+        {/* ── Icon header ── */}
+        <div className={styles['fm-header']}>
+          <div className={styles['fm-icon']} style={{ background: accentBg }}>
+            {isEdit
+              ? <Pencil size={20} style={{ color: accentColor }} />
+              : <Plus    size={22} style={{ color: accentColor }} />
+            }
           </div>
-          <button className={styles['modal-close']} onClick={onClose}><X size={18} /></button>
+          <div className={styles['fm-title-group']}>
+            <span className={styles['fm-title']}>
+              {isEdit ? "Modifier l'entité" : 'Ajouter une entité'}
+            </span>
+            <span className={styles['fm-subtitle']}>
+              {isEdit && node
+                ? <>Code actuel : <code>{node.code}</code></>
+                : parentNode
+                  ? <>Sous « {parentNode.libelleFr} »</>
+                  : 'Nouvelle entité racine'
+              }
+            </span>
+          </div>
+          <button className="btn-icon" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }} onClick={onClose}>
+            <X size={18} />
+          </button>
         </div>
 
-        <form className={styles['modal-body']} onSubmit={handleSubmit}>
-          {/* Libellé FR */}
-          <div className="form-group">
-            <label className="form-label">Libellé (FR) <span className={styles.required}>*</span></label>
-            <input
-              className="form-input"
-              value={form.libelleFr}
-              onChange={(e) => set('libelleFr', e.target.value)}
-              placeholder="ex. Direction des Affaires Économiques"
-              autoFocus
-            />
-          </div>
+        {/* ── Form ── */}
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Libellé AR */}
-          <div className="form-group">
-            <label className="form-label" dir="rtl">التسمية (العربية)</label>
-            <input
-              className="form-input text-right"
-              dir="rtl"
-              value={form.libelleAr}
-              onChange={(e) => set('libelleAr', e.target.value)}
-              placeholder="الاسم بالعربية"
-            />
-          </div>
-
-          <div className="form-row">
-            {/* Code */}
+            {/* Libellé FR */}
             <div className="form-group">
-              <label className="form-label">Code <span className={styles.required}>*</span></label>
+              <label className="form-label">
+                Libellé (FR) <span className={styles.required}>*</span>
+              </label>
               <input
                 className="form-input"
-                value={form.code}
-                onChange={(e) => set('code', e.target.value.toUpperCase())}
-                placeholder="ex. DAES-DIV1"
+                value={form.libelleFr}
+                onChange={(e) => set('libelleFr', e.target.value)}
+                placeholder="ex. Direction des Affaires Économiques"
+                autoFocus
               />
-              <p className={styles['field-hint']}>Identifiant court unique (lettres, chiffres, tirets)</p>
             </div>
 
-            {/* Type */}
+            {/* Libellé AR */}
             <div className="form-group">
-              <label className="form-label">Type</label>
-              <select className="form-select" value={form.type} onChange={(e) => set('type', e.target.value)}>
-                {TYPE_ORDER.map((t) => (
-                  <option key={t} value={t}>{TYPE_META[t]?.label ?? t}</option>
-                ))}
-              </select>
+              <label className="form-label" dir="rtl">التسمية (العربية)</label>
+              <input
+                className="form-input text-right"
+                dir="rtl"
+                value={form.libelleAr}
+                onChange={(e) => set('libelleAr', e.target.value)}
+                placeholder="الاسم بالعربية"
+              />
             </div>
+
+            <div className="form-row">
+              {/* Code */}
+              <div className="form-group">
+                <label className="form-label">
+                  Code <span className={styles.required}>*</span>
+                </label>
+                <input
+                  className="form-input"
+                  value={form.code}
+                  onChange={(e) => set('code', e.target.value.toUpperCase())}
+                  placeholder="ex. DAES-DIV1"
+                />
+                <p className={styles['field-hint']}>Identifiant unique (lettres, chiffres, tirets)</p>
+              </div>
+
+              {/* Type */}
+              <div className="form-group">
+                <label className="form-label">Type</label>
+                <select className="form-select" value={form.type} onChange={(e) => set('type', e.target.value)}>
+                  {TYPE_ORDER.map((t) => (
+                    <option key={t} value={t}>{TYPE_META[t]?.label ?? t}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Parent — mode édition uniquement */}
+            {isEdit && (
+              <div className="form-group">
+                <label className="form-label">Rattachement (entité parente)</label>
+                <select
+                  className="form-select"
+                  value={form.parentId ?? ''}
+                  onChange={(e) => set('parentId', e.target.value === '' ? null : Number(e.target.value))}
+                >
+                  <option value="">— Aucun (racine) —</option>
+                  {parentOptions.map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {n.libelleFr} ({n.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {error && (
+              <div className={styles['inline-error']}>
+                <AlertCircle size={15} /> {error}
+              </div>
+            )}
           </div>
 
-          {/* Parent — seulement en mode édition */}
-          {isEdit && (
-            <div className="form-group">
-              <label className="form-label">Rattachement (entité parente)</label>
-              <select
-                className="form-select"
-                value={form.parentId ?? ''}
-                onChange={(e) => set('parentId', e.target.value === '' ? null : Number(e.target.value))}
-              >
-                <option value="">— Aucun (racine) —</option>
-                {parentOptions.map((n) => (
-                  <option key={n.id} value={n.id}>
-                    {n.libelleFr} ({n.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {error && (
-            <div className={styles['modal-error']}>
-              <AlertCircle size={15} /> {error}
-            </div>
-          )}
-
-          <div className={styles['modal-footer']}>
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-outline" onClick={onClose}>Annuler</button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={saving}
+              style={{ minWidth: 120 }}
+            >
               {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Ajouter'}
             </button>
           </div>
@@ -357,24 +389,47 @@ const DeleteConfirm: React.FC<DeleteConfirmProps> = ({ node, onClose, onConfirme
   };
 
   return (
-    <div className={styles['modal-backdrop']} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`${styles['modal']} ${styles['modal-sm']}`}>
-        <div className={styles['modal-header']}>
-          <div className={styles['modal-title']}><Trash2 size={18} /> Confirmer la suppression</div>
-          <button className={styles['modal-close']} onClick={onClose}><X size={18} /></button>
-        </div>
-        <div className={styles['modal-body']}>
-          <p className={styles['delete-msg']}>
-            Supprimer <strong>{node.libelleFr}</strong> (<code>{node.code}</code>) ?
-            Cette action est irréversible.
-          </p>
-          {error && <div className={styles['modal-error']}><AlertCircle size={15} /> {error}</div>}
-          <div className={styles['modal-footer']}>
-            <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
-            <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
-              {deleting ? 'Suppression…' : 'Supprimer'}
-            </button>
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal confirm-modal">
+
+        <div className="modal-header" style={{ position: 'relative' }}>
+          {/* Icône danger */}
+          <div className="confirm-icon bg-red-100 text-red-600">
+            <Trash2 size={28} />
           </div>
+          {/* Fermer */}
+          <button
+            className="btn-icon"
+            style={{ position: 'absolute', top: 16, right: 16, color: 'var(--text-muted)' }}
+            onClick={onClose}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="modal-body text-center" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <h3 className="confirm-title">Supprimer cette entité ?</h3>
+          <p className="confirm-message">
+            Vous êtes sur le point de supprimer <strong>{node.libelleFr}</strong>{' '}
+            (<code style={{ fontSize: 12 }}>{node.code}</code>).{' '}
+            Cette action est <strong>irréversible</strong>.
+          </p>
+
+          {error && (
+            <div className={styles['delete-error']}>
+              <AlertCircle size={15} style={{ flexShrink: 0 }} />
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer justify-center gap-3" style={{ paddingBottom: 32 }}>
+          <button className="btn btn-outline px-6" onClick={onClose} disabled={deleting}>
+            Annuler
+          </button>
+          <button className="btn btn-danger px-6" onClick={handleDelete} disabled={deleting}>
+            {deleting ? 'Suppression…' : 'Supprimer'}
+          </button>
         </div>
       </div>
     </div>
