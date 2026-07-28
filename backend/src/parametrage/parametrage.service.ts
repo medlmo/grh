@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateCorpsDto,
@@ -9,6 +9,7 @@ import {
   CreateJourFerieDto,
   UpdateCollectiviteDto,
   CreateStructureDto,
+  UpdateStructureDto,
 } from './dto/parametrage.dto';
 
 @Injectable()
@@ -165,11 +166,44 @@ export class ParametrageService {
   }
 
   // --- Structures (organigramme) ---
+
+  /** Liste plate — utilisée par le filtre Agents et les dropdowns */
   async getStructures() {
     return this.prisma.structure.findMany({
-      include: { parent: true, enfants: true },
+      select: { id: true, code: true, libelleFr: true, libelleAr: true, type: true, parentId: true },
       orderBy: { code: 'asc' },
     });
+  }
+
+  /** Arbre complet pour l'onglet Organigramme */
+  async getStructuresArbre() {
+    const all = await this.prisma.structure.findMany({
+      include: { _count: { select: { agents: true } } },
+      orderBy: { libelleFr: 'asc' },
+    });
+
+    // Construction de l'arbre en mémoire (profondeur illimitée)
+    type NodeWithCount = (typeof all)[0];
+    const map = new Map<number | null, NodeWithCount[]>();
+    for (const s of all) {
+      const key = s.parentId ?? null;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    }
+
+    const buildTree = (parentId: number | null): any[] =>
+      (map.get(parentId) ?? []).map((n) => ({
+        id: n.id,
+        code: n.code,
+        libelleFr: n.libelleFr,
+        libelleAr: n.libelleAr,
+        type: n.type,
+        parentId: n.parentId,
+        agentCount: n._count.agents,
+        enfants: buildTree(n.id),
+      }));
+
+    return buildTree(null);
   }
 
   async createStructure(dto: CreateStructureDto) {
@@ -184,7 +218,37 @@ export class ParametrageService {
     });
   }
 
+  async updateStructure(id: number, dto: UpdateStructureDto) {
+    const exists = await this.prisma.structure.findUnique({ where: { id } });
+    if (!exists) throw new NotFoundException(`Structure #${id} introuvable`);
+
+    return this.prisma.structure.update({
+      where: { id },
+      data: {
+        ...(dto.code !== undefined && { code: dto.code }),
+        ...(dto.libelleFr !== undefined && { libelleFr: dto.libelleFr }),
+        ...(dto.libelleAr !== undefined && { libelleAr: dto.libelleAr }),
+        ...(dto.type !== undefined && { type: dto.type }),
+        ...('parentId' in dto && { parentId: dto.parentId ?? null }),
+      },
+    });
+  }
+
   async deleteStructure(id: number) {
+    const [childCount, agentCount] = await Promise.all([
+      this.prisma.structure.count({ where: { parentId: id } }),
+      this.prisma.agent.count({ where: { structureId: id } }),
+    ]);
+
+    if (childCount > 0)
+      throw new BadRequestException(
+        `Impossible de supprimer : cette entité contient ${childCount} sous-entité(s).`,
+      );
+    if (agentCount > 0)
+      throw new BadRequestException(
+        `Impossible de supprimer : ${agentCount} agent(s) sont rattachés à cette entité.`,
+      );
+
     return this.prisma.structure.delete({ where: { id } });
   }
 }

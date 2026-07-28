@@ -4,6 +4,7 @@ import api from '../api/client';
 import styles from './Parametrage.module.css';
 import { Building2, Layers, Briefcase, Calendar } from 'lucide-react';
 import FeriesTab from '../components/parametrage/FeriesTab';
+import OrganigrammeTab from '../components/parametrage/OrganigrammeTab';
 
 const Parametrage: React.FC = () => {
   const { t } = useTranslation();
@@ -119,13 +120,11 @@ const Parametrage: React.FC = () => {
                   <button type="button" className="btn btn-primary">{t('common.save')}</button>
                 </div>
               </form>
+            ) : activeTab === 'structures' ? (
+              <OrganigrammeTab />
             ) : activeTab === 'feries' ? (
               <FeriesTab />
-            ) : (
-              <div className="empty-state">
-                <p>Module spécifique en cours de développement.</p>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

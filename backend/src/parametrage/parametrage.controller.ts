@@ -20,6 +20,7 @@ import {
   CreateJourFerieDto,
   UpdateCollectiviteDto,
   CreateStructureDto,
+  UpdateStructureDto,
 } from './dto/parametrage.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -151,16 +152,33 @@ export class ParametrageController {
     return this.param.deleteJourFerie(id);
   }
 
-  // --- Structures ---
+  // --- Structures (organigramme) ---
+
+  /** Liste plate pour les dropdowns (filtres agents, etc.) */
   @Get('structures')
   getStructures() {
     return this.param.getStructures();
+  }
+
+  /** Arbre complet pour l'onglet Organigramme */
+  @Get('structures/arbre')
+  getStructuresArbre() {
+    return this.param.getStructuresArbre();
   }
 
   @Post('structures')
   @Roles(Role.ADMIN, Role.DRH)
   createStructure(@Body() dto: CreateStructureDto) {
     return this.param.createStructure(dto);
+  }
+
+  @Put('structures/:id')
+  @Roles(Role.ADMIN, Role.DRH)
+  updateStructure(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStructureDto,
+  ) {
+    return this.param.updateStructure(id, dto);
   }
 
   @Delete('structures/:id')

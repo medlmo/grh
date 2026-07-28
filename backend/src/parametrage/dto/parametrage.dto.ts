@@ -61,3 +61,12 @@ export class CreateStructureDto {
   @IsOptional() @IsString() type?: string;
   @IsOptional() @Type(() => Number) @IsInt() parentId?: number;
 }
+
+export class UpdateStructureDto {
+  @IsOptional() @IsString() code?: string;
+  @IsOptional() @IsString() libelleFr?: string;
+  @IsOptional() @IsString() libelleAr?: string;
+  @IsOptional() @IsString() type?: string;
+  // parentId peut être null (pour mettre à la racine) — validé dans le service
+  parentId?: number | null;
+}

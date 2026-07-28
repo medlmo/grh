@@ -193,12 +193,13 @@ model Structure {
   code        String    @unique
   libelleFr   String
   libelleAr   String
-  type        String    @default("SERVICE") // DIRECTION, DIVISION, SERVICE
+  type        String    @default("SERVICE") // PRESIDENT, DIRECTION_GENERALE, DIRECTION, DIVISION, SERVICE
   parentId    Int?
   parent      Structure? @relation("StructureHierarchie", fields: [parentId], references: [id])
   enfants     Structure[] @relation("StructureHierarchie")
   agents      Agent[]
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Agent {
