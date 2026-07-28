@@ -359,10 +359,12 @@ input, select, textarea {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
-.stat-card.blue::before { background: var(--info); }
-.stat-card.green::before { background: var(--success); }
-.stat-card.gold::before { background: var(--gold-500); }
-.stat-card.red::before { background: var(--danger); }
+.stat-card.blue::before   { background: var(--info); }
+.stat-card.green::before  { background: var(--success); }
+.stat-card.gold::before   { background: var(--gold-500); }
+.stat-card.red::before    { background: var(--danger); }
+.stat-card.purple::before { background: #8b5cf6; }
+.stat-card.teal::before   { background: #0d9488; }
 
 .stat-card:hover {
   transform: translateY(-2px);
