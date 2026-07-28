@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import styles from './Dashboard.module.css';
 import {
-  Users, UserCheck, UserMinus, Clock,
-  ClipboardList, LogOut, TrendingUp,
+  Users, UserMinus, Clock,
+  ClipboardList, TrendingUp,
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell,
@@ -102,10 +102,6 @@ const Dashboard: React.FC = () => {
 
   const hommes = stats.parSexe.find((s: any) => s.sexe === 'M')?.count ?? 0;
   const femmes = stats.parSexe.find((s: any) => s.sexe === 'F')?.count ?? 0;
-  const txActivite = stats.totalAgents
-    ? Math.round((stats.agentsEnActivite / stats.totalAgents) * 100)
-    : 0;
-
   const statutCarriereData = stats.parStatutCarriere.map((s: any) => ({
     name:  STATUT_CARRIERE_LABELS[s.statut] ?? s.statut,
     value: s.count,
@@ -137,20 +133,13 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* ── Section 1 : 6 indicateurs clés ─────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard
           value={stats.totalAgents}
           label="Total agents"
           sub={`${hommes} H · ${femmes} F`}
           color="blue"
           icon={<Users />}
-        />
-        <KpiCard
-          value={stats.agentsEnActivite}
-          label="En activité"
-          sub={`${txActivite}% du total`}
-          color="green"
-          icon={<UserCheck />}
         />
         <KpiCard
           value={stats.absentsAujourdhui}
@@ -175,13 +164,6 @@ const Dashboard: React.FC = () => {
           color={stats.decisionsNonSignees > 0 ? 'purple' : 'blue'}
           icon={<ClipboardList />}
           urgent={stats.decisionsNonSignees > 0}
-        />
-        <KpiCard
-          value={stats.departsRetraite2ans}
-          label="Départs ≤ 2 ans"
-          sub="Agents 61–63 ans"
-          color={stats.departsRetraite2ans > 0 ? 'red' : 'teal'}
-          icon={<LogOut />}
         />
       </div>
 

@@ -78,6 +78,7 @@ const AgentForm: React.FC = () => {
   });
 
   const [structures, setStructures] = useState<any[]>([]);
+  const [structureSearch, setStructureSearch] = useState('');
   const [corps, setCorps] = useState<any[]>([]);
   const [cadres, setCadres] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
@@ -107,6 +108,7 @@ const AgentForm: React.FC = () => {
         .get(`/agents/${id}`)
         .then((res) => {
           const d = res.data;
+          // structureSearch sera synchronisé par le useEffect ci-dessous
           setFormData({
             matricule: d.matricule || '',
             cin: d.cin || '',
@@ -157,6 +159,14 @@ const AgentForm: React.FC = () => {
       setIsLoading(false);
     }
   }, [id, isEdit]);
+
+  // Sync structureSearch label when structures load (mode édition)
+  useEffect(() => {
+    if (formData.structureId && structures.length > 0 && !structureSearch) {
+      const match = structures.find((s) => String(s.id) === formData.structureId);
+      if (match) setStructureSearch(match.libelleFr);
+    }
+  }, [structures, formData.structureId]);
 
   const loadCadres = async (corpsId: number) => {
     try {
@@ -779,18 +789,24 @@ const AgentForm: React.FC = () => {
                   <label>Fonction (Ar)</label>
                 </div>
                 <div className="form-group form-floating">
-                  <select
-                    className="form-select"
-                    value={formData.structureId}
-                    onChange={(e) => setFormData({ ...formData, structureId: e.target.value })}
-                  >
-                    <option value="" disabled hidden></option>
+                  <input
+                    className="form-input"
+                    list="structures-datalist"
+                    placeholder=" "
+                    value={structureSearch}
+                    autoComplete="off"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setStructureSearch(val);
+                      const match = structures.find((s) => s.libelleFr === val);
+                      setFormData((prev) => ({ ...prev, structureId: match ? String(match.id) : '' }));
+                    }}
+                  />
+                  <datalist id="structures-datalist">
                     {structures.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.libelleFr}
-                      </option>
+                      <option key={s.id} value={s.libelleFr} />
                     ))}
-                  </select>
+                  </datalist>
                   <label>Structure (Affectation)</label>
                 </div>
               </div>
