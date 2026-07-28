@@ -10,15 +10,11 @@ import {
   LayoutGrid,
   List,
   Users,
-  UserCheck,
-  Clock,
-  FileUser,
   SlidersHorizontal,
   X,
   ChevronDown,
   Building2,
   Venus,
-  Mars,
   Briefcase,
   ArrowUpDown,
 } from 'lucide-react';
@@ -37,26 +33,6 @@ import {
 } from '../utils/agentHelpers';
 
 type SortKey = 'name' | 'name_desc' | 'matricule' | 'recent' | 'oldest';
-
-interface AgentStats {
-  total: number;
-  titulaires: number;
-  stagiaires: number;
-  contractuels: number;
-  males: number;
-  females: number;
-  enActivite: number;
-}
-
-const computeStats = (agents: any[]): AgentStats => ({
-  total: agents.length,
-  titulaires: agents.filter((a) => a.statut === 'TITULAIRE').length,
-  stagiaires: agents.filter((a) => a.statut === 'STAGIAIRE').length,
-  contractuels: agents.filter((a) => a.statut === 'CONTRACTUEL' || a.statut === 'JOURNALIER').length,
-  males: agents.filter((a) => a.sexe === 'M').length,
-  females: agents.filter((a) => a.sexe === 'F').length,
-  enActivite: agents.filter((a) => a.statutCarriere === 'EN_ACTIVITE').length,
-});
 
 const filterAndSortAgents = (agents: any[], filters: {
   statut: string;
@@ -154,14 +130,6 @@ const AgentsList: React.FC = () => {
     [agents, filterStatut, filterStructure, filterGender, filterCarriere, sortBy]
   );
 
-  const stats = useMemo(() => computeStats(agents), [agents]);
-
-  const StatusBar = ({ pct, bg }: { pct: number; bg: string }) => (
-    <div className={styles['stat-dist-bar']}>
-      <div className={`${styles['stat-dist-fill']} ${bg}`} style={{ width: `${pct}%` }} />
-    </div>
-  );
-
   return (
     <div className={styles['agents-page']}>
       <div className="page-header">
@@ -174,72 +142,6 @@ const AgentsList: React.FC = () => {
             <Plus size={18} />
             {t('agents.add_new')}
           </Link>
-        </div>
-      </div>
-
-      <div className={`stats-grid ${styles['stats-grid-agents']}`}>
-        <div className={`stat-card ${styles['stat-card-enhanced']} blue`}>
-          <div className={`${styles['stat-card-top-row']}`}>
-            <div className={`stat-icon blue`}><Users /></div>
-            <div className={`stat-content`}>
-              <div className={`stat-value`}>{stats.total}</div>
-              <div className={`stat-label`}>{t('agents.total')}</div>
-            </div>
-          </div>
-          {stats.total > 0 && (
-            <div className={`${styles['stat-distribution']}`}>
-              <StatusBar pct={(stats.males / stats.total) * 100} bg="bg-info" />
-              <div className={`${styles['stat-dist-legend']}`} style={{ marginTop: -6 }}>
-                <span className={`${styles['stat-dist-item']}`}><Mars size={12} />{stats.males}</span>
-                <span className={`${styles['stat-dist-item']}`}><Venus size={12} />{stats.females}</span>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className={`stat-card ${styles['stat-card-enhanced']} green`}>
-          <div className={`${styles['stat-card-top-row']}`}>
-            <div className={`stat-icon green`}><UserCheck /></div>
-            <div className={`stat-content`}>
-              <div className={`stat-value`}>{stats.titulaires}</div>
-              <div className={`stat-label`}>{t('agents.titulaires')}</div>
-            </div>
-          </div>
-          {stats.total > 0 && (
-            <div className={`${styles['stat-distribution']}`}>
-              <StatusBar pct={(stats.titulaires / stats.total) * 100} bg="bg-success" />
-              <div className={`${styles['stat-dist-percent']}`}>{Math.round((stats.titulaires / stats.total) * 100)}%</div>
-            </div>
-          )}
-        </div>
-        <div className={`stat-card ${styles['stat-card-enhanced']} gold`}>
-          <div className={`${styles['stat-card-top-row']}`}>
-            <div className={`stat-icon gold`}><Clock /></div>
-            <div className={`stat-content`}>
-              <div className={`stat-value`}>{stats.stagiaires}</div>
-              <div className={`stat-label`}>{t('agents.stagiaires')}</div>
-            </div>
-          </div>
-          {stats.total > 0 && (
-            <div className={`${styles['stat-distribution']}`}>
-              <StatusBar pct={(stats.stagiaires / stats.total) * 100} bg="bg-warning" />
-              <div className={`${styles['stat-dist-percent']}`}>{Math.round((stats.stagiaires / stats.total) * 100)}%</div>
-            </div>
-          )}
-        </div>
-        <div className={`stat-card ${styles['stat-card-enhanced']} red`}>
-          <div className={`${styles['stat-card-top-row']}`}>
-            <div className={`stat-icon red`}><FileUser /></div>
-            <div className={`stat-content`}>
-              <div className={`stat-value`}>{stats.contractuels}</div>
-              <div className={`stat-label`}>{t('agents.contractuels')}</div>
-            </div>
-          </div>
-          {stats.total > 0 && (
-            <div className={`${styles['stat-distribution']}`}>
-              <StatusBar pct={(stats.contractuels / stats.total) * 100} bg="bg-danger" />
-              <div className={`${styles['stat-dist-percent']}`}>{Math.round((stats.contractuels / stats.total) * 100)}%</div>
-            </div>
-          )}
         </div>
       </div>
 
