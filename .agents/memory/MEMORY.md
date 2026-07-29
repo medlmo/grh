@@ -1,0 +1,2 @@
+- [Grille hiérarchique — 4 niveaux](grille-4-niveaux.md) — Echelle supprimée, Echelon lié directement au Grade (gradeId), indice retiré de Agent.
+- [Seed scripts](seed-scripts.md) — 3 seeds à relancer après un force-reset : seed.ts, seed-structures.ts, seed-grille.ts.

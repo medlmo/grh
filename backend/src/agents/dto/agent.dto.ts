@@ -67,13 +67,7 @@ export class CreateAgentDto {
   gradeId?: number;
 
   @IsOptional() @Type(() => Number) @IsInt()
-  echelleId?: number;
-
-  @IsOptional() @Type(() => Number) @IsInt()
   echelonId?: number;
-
-  @IsOptional() @Type(() => Number) @IsInt()
-  indice?: number;
 
   @IsOptional() @IsString()
   caisseRetraite?: string;

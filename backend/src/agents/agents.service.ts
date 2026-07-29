@@ -45,10 +45,9 @@ export class AgentsService {
       where: { id },
       include: {
         structure: true,
-        grade: { include: { echelles: { include: { echelons: true } } } },
+        grade: { include: { echelons: true } },
         corps: true,
         cadre: true,
-        echelle: { include: { echelons: true } },
         echelon: true,
         diplomes: true,
         carriereHistorique: { orderBy: { dateEffet: 'desc' } },
@@ -68,7 +67,7 @@ export class AgentsService {
         dateTitularisation: dto.dateTitularisation ? new Date(dto.dateTitularisation) : null,
         dateFinContrat: dto.dateFinContrat ? new Date(dto.dateFinContrat) : null,
       },
-      include: { structure: true, grade: true, corps: true, echelle: true },
+      include: { structure: true, grade: true, corps: true },
     });
   }
 
@@ -83,7 +82,7 @@ export class AgentsService {
         dateTitularisation: dto.dateTitularisation ? new Date(dto.dateTitularisation) : null,
         dateFinContrat: dto.dateFinContrat ? new Date(dto.dateFinContrat) : null,
       },
-      include: { structure: true, grade: true, corps: true, echelle: true },
+      include: { structure: true, grade: true, corps: true },
     });
   }
 

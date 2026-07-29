@@ -61,13 +61,11 @@ const AgentForm: React.FC = () => {
     dateRecrutement: '',
     dateTitularisation: '',
     dateFinContrat: '',
-    // Positionnement grille
+    // Grades & Échelons
     corpsId: '',
     cadreId: '',
     gradeId: '',
-    echelleId: '',
     echelonId: '',
-    indice: '',
     // Retraite
     caisseRetraite: 'CMR',
     matriculeRetraite: '',
@@ -82,7 +80,6 @@ const AgentForm: React.FC = () => {
   const [corps, setCorps] = useState<any[]>([]);
   const [cadres, setCadres] = useState<any[]>([]);
   const [grades, setGrades] = useState<any[]>([]);
-  const [echelles, setEchelles] = useState<any[]>([]);
   const [echelons, setEchelons] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -135,9 +132,7 @@ const AgentForm: React.FC = () => {
             corpsId: d.corpsId ? String(d.corpsId) : '',
             cadreId: d.cadreId ? String(d.cadreId) : '',
             gradeId: d.gradeId ? String(d.gradeId) : '',
-            echelleId: d.echelleId ? String(d.echelleId) : '',
             echelonId: d.echelonId ? String(d.echelonId) : '',
-            indice: d.indice ? String(d.indice) : '',
             caisseRetraite: d.caisseRetraite || 'CMR',
             matriculeRetraite: d.matriculeRetraite || '',
             structureId: d.structureId ? String(d.structureId) : '',
@@ -148,8 +143,7 @@ const AgentForm: React.FC = () => {
           // Load cascading hierarchy
           if (d.corpsId) loadCadres(d.corpsId);
           if (d.cadreId) loadGrades(d.cadreId);
-          if (d.gradeId) loadEchelles(d.gradeId);
-          if (d.echelleId) loadEchelons(d.echelleId);
+          if (d.gradeId) loadEchelons(d.gradeId);
         })
         .catch((err) => {
           setError("Erreur lors du chargement de l'agent.");
@@ -186,18 +180,9 @@ const AgentForm: React.FC = () => {
     }
   };
 
-  const loadEchelles = async (gradeId: number) => {
+  const loadEchelons = async (gradeId: number) => {
     try {
-      const res = await api.get(`/parametrage/grades/${gradeId}/echelles`);
-      setEchelles(res.data);
-    } catch {
-      setEchelles([]);
-    }
-  };
-
-  const loadEchelons = async (echelleId: number) => {
-    try {
-      const res = await api.get(`/parametrage/echelles/${echelleId}/echelons`);
+      const res = await api.get(`/parametrage/grades/${gradeId}/echelons`);
       setEchelons(res.data);
     } catch {
       setEchelons([]);
@@ -205,31 +190,22 @@ const AgentForm: React.FC = () => {
   };
 
   const handleCorpsChange = (value: string) => {
-    setFormData({ ...formData, corpsId: value, cadreId: '', gradeId: '', echelleId: '', echelonId: '' });
+    setFormData({ ...formData, corpsId: value, cadreId: '', gradeId: '', echelonId: '' });
     setCadres([]);
     setGrades([]);
-    setEchelles([]);
     setEchelons([]);
     if (value) loadCadres(Number(value));
   };
 
   const handleCadreChange = (value: string) => {
-    setFormData({ ...formData, cadreId: value, gradeId: '', echelleId: '', echelonId: '' });
+    setFormData({ ...formData, cadreId: value, gradeId: '', echelonId: '' });
     setGrades([]);
-    setEchelles([]);
     setEchelons([]);
     if (value) loadGrades(Number(value));
   };
 
   const handleGradeChange = (value: string) => {
-    setFormData({ ...formData, gradeId: value, echelleId: '', echelonId: '' });
-    setEchelles([]);
-    setEchelons([]);
-    if (value) loadEchelles(Number(value));
-  };
-
-  const handleEchelleChange = (value: string) => {
-    setFormData({ ...formData, echelleId: value, echelonId: '' });
+    setFormData({ ...formData, gradeId: value, echelonId: '' });
     setEchelons([]);
     if (value) loadEchelons(Number(value));
   };
@@ -307,9 +283,7 @@ const AgentForm: React.FC = () => {
     payload.corpsId = parseInt(formData.corpsId);
     if (formData.cadreId) payload.cadreId = parseInt(formData.cadreId);
     if (formData.gradeId) payload.gradeId = parseInt(formData.gradeId);
-    if (formData.echelleId) payload.echelleId = parseInt(formData.echelleId);
     if (formData.echelonId) payload.echelonId = parseInt(formData.echelonId);
-    if (formData.indice) payload.indice = parseInt(formData.indice);
     if (formData.structureId) payload.structureId = parseInt(formData.structureId);
     // Only set dateFinContrat if it has a value
     if (formData.dateFinContrat) payload.dateFinContrat = formData.dateFinContrat;
@@ -813,14 +787,14 @@ const AgentForm: React.FC = () => {
             </div>
           </div>
 
-          {/* ===== Section 5: Positionnement Grille ===== */}
+          {/* ===== Section 5: Grades & Échelons ===== */}
           <div className="p-6 pt-0">
             <div className="form-section">
               <h3 className="form-section-title">
                 <Award size={20} />
-                Positionnement Grille
+                Grades &amp; Échelons
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div className={`form-group form-floating${formErrors.corpsId ? ' has-error' : ''}`}>
                   <select
                     className="form-select"
@@ -829,12 +803,10 @@ const AgentForm: React.FC = () => {
                   >
                     <option value="" disabled hidden></option>
                     {corps.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.libelleFr}
-                      </option>
+                      <option key={c.id} value={c.id}>{c.libelleFr}</option>
                     ))}
                   </select>
-                  <label>Corps d'appartenance <span className="form-required">*</span></label>
+                  <label>Corps <span className="form-required">*</span></label>
                   {formErrors.corpsId && <p className="form-error-msg">{formErrors.corpsId}</p>}
                 </div>
                 <div className="form-group form-floating">
@@ -846,9 +818,7 @@ const AgentForm: React.FC = () => {
                   >
                     <option value="" disabled hidden></option>
                     {cadres.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.libelleFr}
-                      </option>
+                      <option key={c.id} value={c.id}>{c.libelleFr}</option>
                     ))}
                   </select>
                   <label>Cadre</label>
@@ -862,9 +832,7 @@ const AgentForm: React.FC = () => {
                   >
                     <option value="" disabled hidden></option>
                     {grades.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.libelleFr}
-                      </option>
+                      <option key={g.id} value={g.id}>{g.libelleFr}</option>
                     ))}
                   </select>
                   <label>Grade</label>
@@ -872,44 +840,18 @@ const AgentForm: React.FC = () => {
                 <div className="form-group form-floating">
                   <select
                     className="form-select"
-                    value={formData.echelleId}
-                    onChange={(e) => handleEchelleChange(e.target.value)}
-                    disabled={!formData.gradeId}
-                  >
-                    <option value="" disabled hidden></option>
-                    {echelles.map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.libelleFr}
-                      </option>
-                    ))}
-                  </select>
-                  <label>Échelle <span className="form-required">*</span></label>
-                </div>
-                <div className="form-group form-floating">
-                  <select
-                    className="form-select"
                     value={formData.echelonId}
                     onChange={(e) => setFormData({ ...formData, echelonId: e.target.value })}
-                    disabled={!formData.echelleId}
+                    disabled={!formData.gradeId}
                   >
                     <option value="" disabled hidden></option>
                     {echelons.map((e) => (
                       <option key={e.id} value={e.id}>
-                        Échelon {e.numero} (Indice {e.indice})
+                        Échelon {e.numero}
                       </option>
                     ))}
                   </select>
                   <label>Échelon</label>
-                </div>
-                <div className="form-group form-floating">
-                  <input
-                    type="number"
-                    className="form-input"
-                    placeholder=" "
-                    value={formData.indice}
-                    onChange={(e) => setFormData({ ...formData, indice: e.target.value })}
-                  />
-                  <label>Indice</label>
                 </div>
               </div>
             </div>

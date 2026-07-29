@@ -79,35 +79,20 @@ model Grade {
   descriptionAr String?
   cadreId     Int
   cadre       Cadre    @relation(fields: [cadreId], references: [id])
-  echelles    Echelle[]
-  agents      Agent[]
-  createdAt   DateTime @default(now())
-}
-
-model Echelle {
-  id          Int      @id @default(autoincrement())
-  code        String   @unique
-  numero      Int      // Numéro d'échelle (ex: 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
-  libelleFr   String   // "Échelle 11"
-  libelleAr   String   // "السلم 11"
-  gradeId     Int
-  grade       Grade    @relation(fields: [gradeId], references: [id])
   echelons    Echelon[]
   agents      Agent[]
   createdAt   DateTime @default(now())
-  @@unique([gradeId, numero])
 }
 
 model Echelon {
   id            Int      @id @default(autoincrement())
-  echelleId     Int
-  echelle       Echelle  @relation(fields: [echelleId], references: [id])
+  gradeId       Int
+  grade         Grade    @relation(fields: [gradeId], references: [id])
   numero        Int      // Numéro d'échelon (1, 2, 3...)
-  indice        Int      // Indice de rémunération (ex: 509, 545, 581...)
-  dureeMinMois  Int      @default(24) // Ancienneté minimale pour avancement
+  dureeMinMois  Int      @default(24) // Ancienneté minimale pour avancement (en mois)
   agents        Agent[]
   createdAt     DateTime @default(now())
-  @@unique([echelleId, numero])
+  @@unique([gradeId, numero])
 }
 
 model JourFerie {
@@ -234,18 +219,15 @@ model Agent {
   dateTitularisation DateTime?
   dateFinContrat     DateTime?
 
-  // Positionnement grille (hiérarchie marocaine)
+  // Positionnement grille (Corps → Cadre → Grade → Échelon)
   corpsId            Int
   corps              Corps     @relation(fields: [corpsId], references: [id])
   cadreId            Int?
   cadre              Cadre?    @relation(fields: [cadreId], references: [id])
   gradeId            Int?
   grade              Grade?    @relation(fields: [gradeId], references: [id])
-  echelleId          Int?
-  echelle            Echelle?  @relation(fields: [echelleId], references: [id])
   echelonId          Int?
   echelon            Echelon?  @relation(fields: [echelonId], references: [id])
-  indice             Int?
 
   // Retraite
   caisseRetraite     String    @default("CMR") // CMR / RCAR

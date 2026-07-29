@@ -5,35 +5,61 @@ export class CreateCorpsDto {
   @IsString() code: string;
   @IsString() libelleFr: string;
   @IsString() libelleAr: string;
+  @IsOptional() @IsString() descriptionFr?: string;
+  @IsOptional() @IsString() descriptionAr?: string;
+}
+
+export class UpdateCorpsDto {
+  @IsOptional() @IsString() code?: string;
+  @IsOptional() @IsString() libelleFr?: string;
+  @IsOptional() @IsString() libelleAr?: string;
+  @IsOptional() @IsString() descriptionFr?: string;
+  @IsOptional() @IsString() descriptionAr?: string;
 }
 
 export class CreateCadreDto {
   @IsString() code: string;
   @IsString() libelleFr: string;
   @IsString() libelleAr: string;
+  @IsOptional() @IsString() descriptionFr?: string;
+  @IsOptional() @IsString() descriptionAr?: string;
   @Type(() => Number) @IsInt() corpsId: number;
+}
+
+export class UpdateCadreDto {
+  @IsOptional() @IsString() code?: string;
+  @IsOptional() @IsString() libelleFr?: string;
+  @IsOptional() @IsString() libelleAr?: string;
+  @IsOptional() @IsString() descriptionFr?: string;
+  @IsOptional() @IsString() descriptionAr?: string;
 }
 
 export class CreateGradeDto {
   @IsString() code: string;
   @IsString() libelleFr: string;
   @IsString() libelleAr: string;
+  @IsOptional() @IsString() descriptionFr?: string;
+  @IsOptional() @IsString() descriptionAr?: string;
   @Type(() => Number) @IsInt() cadreId: number;
 }
 
-export class CreateEchelleDto {
-  @IsString() code: string;
-  @Type(() => Number) @IsInt() numero: number;
-  @IsString() libelleFr: string;
-  @IsString() libelleAr: string;
-  @Type(() => Number) @IsInt() gradeId: number;
+export class UpdateGradeDto {
+  @IsOptional() @IsString() code?: string;
+  @IsOptional() @IsString() libelleFr?: string;
+  @IsOptional() @IsString() libelleAr?: string;
+  @IsOptional() @IsString() descriptionFr?: string;
+  @IsOptional() @IsString() descriptionAr?: string;
 }
 
 export class CreateEchelonDto {
-  @Type(() => Number) @IsInt() echelleId: number;
+  @Type(() => Number) @IsInt() gradeId: number;
   @Type(() => Number) @IsInt() numero: number;
-  @Type(() => Number) @IsInt() indice: number;
-  @Type(() => Number) @IsInt() dureeMinMois: number;
+  @IsOptional() @Type(() => Number) @IsInt() dureeMinMois?: number;
+}
+
+export class UpdateEchelonDto {
+  @IsOptional() @Type(() => Number) @IsInt() numero?: number;
+  @IsOptional() @Type(() => Number) @IsInt() dureeMinMois?: number;
 }
 
 export class CreateJourFerieDto {

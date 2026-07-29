@@ -5,6 +5,7 @@ import styles from './Parametrage.module.css';
 import { Building2, Layers, Briefcase, Calendar } from 'lucide-react';
 import FeriesTab from '../components/parametrage/FeriesTab';
 import OrganigrammeTab from '../components/parametrage/OrganigrammeTab';
+import GrilleTab from '../components/parametrage/GrilleTab';
 
 const Parametrage: React.FC = () => {
   const { t } = useTranslation();
@@ -122,6 +123,8 @@ const Parametrage: React.FC = () => {
               </form>
             ) : activeTab === 'structures' ? (
               <OrganigrammeTab />
+            ) : activeTab === 'grades' ? (
+              <GrilleTab />
             ) : activeTab === 'feries' ? (
               <FeriesTab />
             ) : null}

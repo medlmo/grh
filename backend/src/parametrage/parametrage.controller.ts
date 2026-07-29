@@ -1,22 +1,13 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  ParseIntPipe,
+  Controller, Get, Post, Put, Delete,
+  Body, Param, Query, UseGuards, ParseIntPipe,
 } from '@nestjs/common';
 import { ParametrageService } from './parametrage.service';
 import {
-  CreateCorpsDto,
-  CreateCadreDto,
-  CreateGradeDto,
-  CreateEchelleDto,
-  CreateEchelonDto,
+  CreateCorpsDto, UpdateCorpsDto,
+  CreateCadreDto, UpdateCadreDto,
+  CreateGradeDto, UpdateGradeDto,
+  CreateEchelonDto, UpdateEchelonDto,
   CreateJourFerieDto,
   UpdateCollectiviteDto,
   CreateStructureDto,
@@ -32,11 +23,10 @@ import { Role } from '@prisma/client';
 export class ParametrageController {
   constructor(private param: ParametrageService) {}
 
-  // --- Collectivité ---
+  // ── Collectivité ────────────────────────────────────────────────────────────
+
   @Get('collectivite')
-  getCollectivite() {
-    return this.param.getCollectivite();
-  }
+  getCollectivite() { return this.param.getCollectivite(); }
 
   @Put('collectivite')
   @Roles(Role.ADMIN)
@@ -44,13 +34,10 @@ export class ParametrageController {
     return this.param.updateCollectivite(dto);
   }
 
-  // --- Corps / Cadres / Grades / Échelles / Échelons ---
-  // Hiérarchie marocaine : Corps → Cadre → Grade → Échelle → Échelon
+  // ── Hiérarchie : Corps → Cadre → Grade → Échelon ───────────────────────────
 
   @Get('corps')
-  getCorps() {
-    return this.param.getCorps();
-  }
+  getCorps() { return this.param.getCorps(); }
 
   @Get('corps/:id/cadres')
   getCorpsCadres(@Param('id', ParseIntPipe) id: number) {
@@ -59,15 +46,19 @@ export class ParametrageController {
 
   @Post('corps')
   @Roles(Role.ADMIN)
-  createCorps(@Body() dto: CreateCorpsDto) {
-    return this.param.createCorps(dto);
+  createCorps(@Body() dto: CreateCorpsDto) { return this.param.createCorps(dto); }
+
+  @Put('corps/:id')
+  @Roles(Role.ADMIN)
+  updateCorps(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCorpsDto) {
+    return this.param.updateCorps(id, dto);
   }
 
   @Delete('corps/:id')
   @Roles(Role.ADMIN)
-  deleteCorps(@Param('id', ParseIntPipe) id: number) {
-    return this.param.deleteCorps(id);
-  }
+  deleteCorps(@Param('id', ParseIntPipe) id: number) { return this.param.deleteCorps(id); }
+
+  // ── Cadres ──────────────────────────────────────────────────────────────────
 
   @Get('cadres/:id/grades')
   getCadreGrades(@Param('id', ParseIntPipe) id: number) {
@@ -76,65 +67,57 @@ export class ParametrageController {
 
   @Post('cadres')
   @Roles(Role.ADMIN)
-  createCadre(@Body() dto: CreateCadreDto) {
-    return this.param.createCadre(dto);
+  createCadre(@Body() dto: CreateCadreDto) { return this.param.createCadre(dto); }
+
+  @Put('cadres/:id')
+  @Roles(Role.ADMIN)
+  updateCadre(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCadreDto) {
+    return this.param.updateCadre(id, dto);
   }
 
   @Delete('cadres/:id')
   @Roles(Role.ADMIN)
-  deleteCadre(@Param('id', ParseIntPipe) id: number) {
-    return this.param.deleteCadre(id);
-  }
+  deleteCadre(@Param('id', ParseIntPipe) id: number) { return this.param.deleteCadre(id); }
 
-  @Get('grades/:id/echelles')
-  getGradeEchelles(@Param('id', ParseIntPipe) id: number) {
-    return this.param.getGradeEchelles(id);
+  // ── Grades ──────────────────────────────────────────────────────────────────
+
+  @Get('grades/:id/echelons')
+  getGradeEchelons(@Param('id', ParseIntPipe) id: number) {
+    return this.param.getGradeEchelons(id);
   }
 
   @Post('grades')
   @Roles(Role.ADMIN)
-  createGrade(@Body() dto: CreateGradeDto) {
-    return this.param.createGrade(dto);
+  createGrade(@Body() dto: CreateGradeDto) { return this.param.createGrade(dto); }
+
+  @Put('grades/:id')
+  @Roles(Role.ADMIN)
+  updateGrade(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateGradeDto) {
+    return this.param.updateGrade(id, dto);
   }
 
   @Delete('grades/:id')
   @Roles(Role.ADMIN)
-  deleteGrade(@Param('id', ParseIntPipe) id: number) {
-    return this.param.deleteGrade(id);
-  }
+  deleteGrade(@Param('id', ParseIntPipe) id: number) { return this.param.deleteGrade(id); }
 
-  // --- Échelles ---
-  @Get('echelles/:id/echelons')
-  getEchelleEchelons(@Param('id', ParseIntPipe) id: number) {
-    return this.param.getEchelleEchelons(id);
-  }
+  // ── Échelons ─────────────────────────────────────────────────────────────────
 
-  @Post('echelles')
-  @Roles(Role.ADMIN)
-  createEchelle(@Body() dto: CreateEchelleDto) {
-    return this.param.createEchelle(dto);
-  }
-
-  @Delete('echelles/:id')
-  @Roles(Role.ADMIN)
-  deleteEchelle(@Param('id', ParseIntPipe) id: number) {
-    return this.param.deleteEchelle(id);
-  }
-
-  // --- Échelons ---
   @Post('echelons')
   @Roles(Role.ADMIN)
-  createEchelon(@Body() dto: CreateEchelonDto) {
-    return this.param.createEchelon(dto);
+  createEchelon(@Body() dto: CreateEchelonDto) { return this.param.createEchelon(dto); }
+
+  @Put('echelons/:id')
+  @Roles(Role.ADMIN)
+  updateEchelon(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEchelonDto) {
+    return this.param.updateEchelon(id, dto);
   }
 
   @Delete('echelons/:id')
   @Roles(Role.ADMIN)
-  deleteEchelon(@Param('id', ParseIntPipe) id: number) {
-    return this.param.deleteEchelon(id);
-  }
+  deleteEchelon(@Param('id', ParseIntPipe) id: number) { return this.param.deleteEchelon(id); }
 
-  // --- Jours fériés ---
+  // ── Jours fériés ─────────────────────────────────────────────────────────────
+
   @Get('feries')
   getJoursFeries(@Query('annee') annee?: string) {
     return this.param.getJoursFeries(annee ? Number(annee) : undefined);
@@ -142,48 +125,31 @@ export class ParametrageController {
 
   @Post('feries')
   @Roles(Role.ADMIN)
-  createJourFerie(@Body() dto: CreateJourFerieDto) {
-    return this.param.createJourFerie(dto);
-  }
+  createJourFerie(@Body() dto: CreateJourFerieDto) { return this.param.createJourFerie(dto); }
 
   @Delete('feries/:id')
   @Roles(Role.ADMIN)
-  deleteJourFerie(@Param('id', ParseIntPipe) id: number) {
-    return this.param.deleteJourFerie(id);
-  }
+  deleteJourFerie(@Param('id', ParseIntPipe) id: number) { return this.param.deleteJourFerie(id); }
 
-  // --- Structures (organigramme) ---
+  // ── Structures (organigramme) ────────────────────────────────────────────────
 
-  /** Liste plate pour les dropdowns (filtres agents, etc.) */
   @Get('structures')
-  getStructures() {
-    return this.param.getStructures();
-  }
+  getStructures() { return this.param.getStructures(); }
 
-  /** Arbre complet pour l'onglet Organigramme */
   @Get('structures/arbre')
-  getStructuresArbre() {
-    return this.param.getStructuresArbre();
-  }
+  getStructuresArbre() { return this.param.getStructuresArbre(); }
 
   @Post('structures')
   @Roles(Role.ADMIN, Role.DRH)
-  createStructure(@Body() dto: CreateStructureDto) {
-    return this.param.createStructure(dto);
-  }
+  createStructure(@Body() dto: CreateStructureDto) { return this.param.createStructure(dto); }
 
   @Put('structures/:id')
   @Roles(Role.ADMIN, Role.DRH)
-  updateStructure(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateStructureDto,
-  ) {
+  updateStructure(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStructureDto) {
     return this.param.updateStructure(id, dto);
   }
 
   @Delete('structures/:id')
   @Roles(Role.ADMIN)
-  deleteStructure(@Param('id', ParseIntPipe) id: number) {
-    return this.param.deleteStructure(id);
-  }
+  deleteStructure(@Param('id', ParseIntPipe) id: number) { return this.param.deleteStructure(id); }
 }
