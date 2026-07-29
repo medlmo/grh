@@ -69,13 +69,39 @@ export class ParametrageService {
   }
 
   async deleteCorps(id: number) {
-    const childCount = await this.prisma.cadre.count({ where: { corpsId: id } });
-    if (childCount > 0)
-      throw new BadRequestException(`Impossible : ${childCount} cadre(s) rattaché(s) à ce corps.`);
-    const agentCount = await this.prisma.agent.count({ where: { corpsId: id } });
+    // Collect all descendant IDs
+    const cadres  = await this.prisma.cadre.findMany({ where: { corpsId: id }, select: { id: true } });
+    const cadreIds = cadres.map((c) => c.id);
+    const grades  = cadreIds.length
+      ? await this.prisma.grade.findMany({ where: { cadreId: { in: cadreIds } }, select: { id: true } })
+      : [];
+    const gradeIds = grades.map((g) => g.id);
+    const echelons = gradeIds.length
+      ? await this.prisma.echelon.findMany({ where: { gradeId: { in: gradeIds } }, select: { id: true } })
+      : [];
+    const echelonIds = echelons.map((e) => e.id);
+
+    // Block if any agent is attached anywhere in the subtree
+    const agentCount = await this.prisma.agent.count({
+      where: {
+        OR: [
+          { corpsId: id },
+          ...(cadreIds.length   ? [{ cadreId:   { in: cadreIds   } }] : []),
+          ...(gradeIds.length   ? [{ gradeId:   { in: gradeIds   } }] : []),
+          ...(echelonIds.length ? [{ echelonId: { in: echelonIds } }] : []),
+        ],
+      },
+    });
     if (agentCount > 0)
-      throw new BadRequestException(`Impossible : ${agentCount} agent(s) appartiennent à ce corps.`);
-    return this.prisma.corps.delete({ where: { id } });
+      throw new BadRequestException(`Impossible : ${agentCount} agent(s) affecté(s) à ce corps ou à ses sous-éléments.`);
+
+    // Cascade delete leaf → root inside a transaction
+    return this.prisma.$transaction([
+      ...(echelonIds.length ? [this.prisma.echelon.deleteMany({ where: { id: { in: echelonIds } } })] : []),
+      ...(gradeIds.length   ? [this.prisma.grade.deleteMany({ where: { id: { in: gradeIds }   } })] : []),
+      ...(cadreIds.length   ? [this.prisma.cadre.deleteMany({ where: { id: { in: cadreIds }   } })] : []),
+      this.prisma.corps.delete({ where: { id } }),
+    ]);
   }
 
   // ── Cadres ──────────────────────────────────────────────────────────────────
@@ -99,13 +125,30 @@ export class ParametrageService {
   }
 
   async deleteCadre(id: number) {
-    const childCount = await this.prisma.grade.count({ where: { cadreId: id } });
-    if (childCount > 0)
-      throw new BadRequestException(`Impossible : ${childCount} grade(s) rattaché(s) à ce cadre.`);
-    const agentCount = await this.prisma.agent.count({ where: { cadreId: id } });
+    const grades   = await this.prisma.grade.findMany({ where: { cadreId: id }, select: { id: true } });
+    const gradeIds = grades.map((g) => g.id);
+    const echelons = gradeIds.length
+      ? await this.prisma.echelon.findMany({ where: { gradeId: { in: gradeIds } }, select: { id: true } })
+      : [];
+    const echelonIds = echelons.map((e) => e.id);
+
+    const agentCount = await this.prisma.agent.count({
+      where: {
+        OR: [
+          { cadreId: id },
+          ...(gradeIds.length   ? [{ gradeId:   { in: gradeIds   } }] : []),
+          ...(echelonIds.length ? [{ echelonId: { in: echelonIds } }] : []),
+        ],
+      },
+    });
     if (agentCount > 0)
-      throw new BadRequestException(`Impossible : ${agentCount} agent(s) dans ce cadre.`);
-    return this.prisma.cadre.delete({ where: { id } });
+      throw new BadRequestException(`Impossible : ${agentCount} agent(s) affecté(s) à ce cadre ou à ses sous-éléments.`);
+
+    return this.prisma.$transaction([
+      ...(echelonIds.length ? [this.prisma.echelon.deleteMany({ where: { id: { in: echelonIds } } })] : []),
+      ...(gradeIds.length   ? [this.prisma.grade.deleteMany({ where: { id: { in: gradeIds }   } })] : []),
+      this.prisma.cadre.delete({ where: { id } }),
+    ]);
   }
 
   // ── Grades ──────────────────────────────────────────────────────────────────
@@ -129,13 +172,24 @@ export class ParametrageService {
   }
 
   async deleteGrade(id: number) {
-    const childCount = await this.prisma.echelon.count({ where: { gradeId: id } });
-    if (childCount > 0)
-      throw new BadRequestException(`Impossible : ${childCount} échelon(s) rattaché(s) à ce grade.`);
-    const agentCount = await this.prisma.agent.count({ where: { gradeId: id } });
+    const echelons   = await this.prisma.echelon.findMany({ where: { gradeId: id }, select: { id: true } });
+    const echelonIds = echelons.map((e) => e.id);
+
+    const agentCount = await this.prisma.agent.count({
+      where: {
+        OR: [
+          { gradeId: id },
+          ...(echelonIds.length ? [{ echelonId: { in: echelonIds } }] : []),
+        ],
+      },
+    });
     if (agentCount > 0)
-      throw new BadRequestException(`Impossible : ${agentCount} agent(s) à ce grade.`);
-    return this.prisma.grade.delete({ where: { id } });
+      throw new BadRequestException(`Impossible : ${agentCount} agent(s) affecté(s) à ce grade ou à ses échelons.`);
+
+    return this.prisma.$transaction([
+      ...(echelonIds.length ? [this.prisma.echelon.deleteMany({ where: { id: { in: echelonIds } } })] : []),
+      this.prisma.grade.delete({ where: { id } }),
+    ]);
   }
 
   // ── Échelons ─────────────────────────────────────────────────────────────────
