@@ -298,7 +298,8 @@ const DeleteConfirm: React.FC<DeleteProps> = ({ kind, item, onClose, onConfirmed
   const [error,    setError]    = useState('');
 
   const label = kind === 'echelon' ? `Échelon ${item.numero}` : item.libelleFr;
-  const endpoint = `${kind}s`;
+  const ENDPOINTS: Record<string, string> = { corps: 'corps', cadre: 'cadres', grade: 'grades', echelon: 'echelons' };
+  const endpoint = ENDPOINTS[kind];
 
   const handleDelete = async () => {
     setDeleting(true); setError('');
