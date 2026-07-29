@@ -203,9 +203,13 @@ const OverviewTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
         <InfoCard icon={<Award size={18} />} label={t('agents.corps')} value={agent.corps?.libelleFr} />
         <InfoCard icon={<BriefcaseBusiness size={18} />} label={t('agents.cadre')} value={agent.cadre?.libelleFr} />
         <InfoCard icon={<Award size={18} />} label={t('agents.grade')} value={agent.grade?.libelleFr} />
-        {agent.echelle && <InfoCard icon={<Award size={18} />} label="Échelle" value={agent.echelle.libelleFr} />}
-        {agent.echelon && <InfoCard icon={<Award size={18} />} label={t('agents.echelon')} value={`Échelon ${agent.echelon.numero} (Indice ${agent.echelon.indice})`} />}
-        {agent.indice && <InfoCard icon={<Award size={18} />} label={t('agents.indice')} value={agent.indice} />}
+        {agent.echelon && (
+          <InfoCard
+            icon={<Award size={18} />}
+            label={t('agents.echelon')}
+            value={`Échelon ${agent.echelon.numero}${agent.echelon.dureeMinMois ? ` — ancienneté min. ${agent.echelon.dureeMinMois} mois` : ''}`}
+          />
+        )}
       </div>
     </div>
 
