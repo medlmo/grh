@@ -33,6 +33,7 @@ const N2_ROLES = [Role.DRH, Role.DIRECTEUR_GENERAL, Role.PRESIDENT];
 
 export interface CongeFilters {
   agentId?: number;
+  mine?: boolean;
   statut?: StatutDemande;
   type?: TypeConge;
   structureId?: number;
@@ -55,8 +56,11 @@ export class CongesService {
   async findAll(user: { agentId?: number; role: string }, params?: CongeFilters) {
     const where: Prisma.CongeWhereInput = {};
 
-    // Un agent non-privilégié ne voit que ses propres congés, quel que soit le filtre agentId passé.
-    if (!PRIVILEGED_ROLES.includes(user.role)) {
+    // mine=true → toujours filtrer sur l'agent connecté (onglet "Mes Congés" pour tous rôles)
+    if (params?.mine) {
+      where.agentId = user.agentId ?? -1; // -1 retourne vide si pas de profil agent
+    } else if (!PRIVILEGED_ROLES.includes(user.role)) {
+      // Un agent non-privilégié ne voit que ses propres congés, quel que soit le filtre agentId passé.
       this.requireAgentId(user);
       where.agentId = user.agentId as number;
     } else {

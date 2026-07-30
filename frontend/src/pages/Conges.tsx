@@ -58,7 +58,7 @@ const Conges: React.FC = () => {
     try {
       if (activeTab === 'mes-conges') {
         const [congesRes, soldeRes, typesRes] = await Promise.all([
-          api.get('/conges', { params: { agentId: user?.agentId } }),
+          api.get('/conges', { params: { mine: 'true' } }),
           user?.agentId ? api.get(`/conges/solde/${user.agentId}`) : Promise.resolve({ data: null }),
           api.get('/conges/types'),
         ]);
@@ -109,7 +109,7 @@ const Conges: React.FC = () => {
 
   const handleCreate = async (submit = false) => {
     if (!form.type || !form.dateDebut || !form.dateFin) {
-      setFormError('Veuillez renseigner le type, la date de début et la date de fin.');
+      setFormError('Veuillez renseigner le type, la date de début et la date de retour.');
       return;
     }
     setFormError(null);

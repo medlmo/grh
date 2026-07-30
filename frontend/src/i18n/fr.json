@@ -154,7 +154,7 @@
     "type": "Type de congé",
     "select_type": "Sélectionner un type",
     "start_date": "Date de début",
-    "end_date": "Date de fin",
+    "end_date": "Date de retour",
     "duration": "Durée (jours)",
     "reason": "Motif",
     "address": "Adresse pendant le congé",

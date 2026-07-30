@@ -25,6 +25,7 @@ export class CongesController {
   @Get()
   findAll(
     @CurrentUser() user: any,
+    @Query('mine') mine?: string,
     @Query('agentId') agentId?: string,
     @Query('statut') statut?: StatutDemande,
     @Query('type') type?: TypeConge,
@@ -33,6 +34,7 @@ export class CongesController {
     @Query('fin') fin?: string,
   ) {
     return this.conges.findAll(user, {
+      mine: mine === 'true',
       agentId: agentId ? Number(agentId) : undefined,
       statut,
       type,

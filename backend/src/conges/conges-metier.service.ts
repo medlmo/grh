@@ -175,7 +175,7 @@ export class CongesMetierService {
 
     let count = 0;
     const cur = new Date(debut);
-    while (cur <= fin) {
+    while (cur < fin) {
       const day = cur.getDay();
       const isWeekend = day === 0 || day === 6;
       const isFerie =
