@@ -1,0 +1,49 @@
+# ── Dépendances ─────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build / compilation ──────────────────────────────────────────────────────
+dist/
+build/
+.next/
+
+# ── Variables d'environnement ────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Garder l'exemple
+!.env.example
+
+# ── Uploads et données utilisateur ──────────────────────────────────────────
+backend/uploads/
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Replit (spécifique à la plateforme) ──────────────────────────────────────
+.local/
+.agents/
+.cache/
+replit.nix
+.replit
+
+# ── Fichiers temporaires / scripts one-shot ──────────────────────────────────
+*.zip
+replace_*.js
+scripts/
+attached_assets/
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
