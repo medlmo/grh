@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import api from '../api/client';
+import { DashboardStats } from '../types';
 import styles from './Dashboard.module.css';
 import {
   Users, UserMinus, Clock,
   ClipboardList, TrendingUp,
 } from 'lucide-react';
-import {
-  PieChart, Pie, Cell,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
-} from 'recharts';
+const AgeAndCareerCharts = lazy(() => import('../components/dashboard/AgeAndCareerCharts'));
+const LeaveCharts = lazy(() => import('../components/dashboard/LeaveCharts'));
+const StructureChart = lazy(() => import('../components/dashboard/StructureChart'));
 
 // ─── Mappings libellés ────────────────────────────────────────────────────────
 
@@ -58,6 +57,34 @@ const tooltipStyle = {
   fontSize: '13px',
 };
 
+const ChartSection: React.FC<{ children: React.ReactNode; minHeight: number }> = ({ children, minHeight }) => {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || isVisible) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '240px' },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  return (
+    <div ref={sectionRef} style={{ minHeight }}>
+      {isVisible ? <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-gray-400">Chargement…</div>}>{children}</Suspense> : null}
+    </div>
+  );
+};
+
 // ─── Composant KPI Card ───────────────────────────────────────────────────────
 
 const KpiCard: React.FC<{
@@ -81,7 +108,7 @@ const KpiCard: React.FC<{
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -100,28 +127,32 @@ const Dashboard: React.FC = () => {
   }
   if (!stats) return null;
 
-  const hommes = stats.parSexe.find((s: any) => s.sexe === 'M')?.count ?? 0;
-  const femmes = stats.parSexe.find((s: any) => s.sexe === 'F')?.count ?? 0;
-  const statutCarriereData = stats.parStatutCarriere.map((s: any) => ({
+  const hommes = stats.parSexe.find((s) => s.sexe === 'M')?.count ?? 0;
+  const femmes = stats.parSexe.find((s) => s.sexe === 'F')?.count ?? 0;
+  const statutCarriereData = stats.parStatutCarriere.map((s) => ({
     name:  STATUT_CARRIERE_LABELS[s.statut] ?? s.statut,
     value: s.count,
     key:   s.statut,
   }));
 
-  const congesTypeData = stats.congesParType.map((c: any) => ({
+  const congesTypeData = stats.congesParType.map((c) => ({
     name:  TYPE_LABELS[c.type] ?? c.type,
     value: c.count,
     jours: Math.round(c.jours),
   }));
 
-  const evolutionData = stats.evolutionMensuelle.map((m: any) => ({
+  const evolutionData = stats.evolutionMensuelle.map((m) => ({
     mois:  formatMonth(m.mois),
     total: m.total,
   }));
 
   const structureData = [...stats.parStructure]
-    .sort((a: any, b: any) => b.count - a.count)
-    .slice(0, 8);
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
+    .map((structure) => ({
+      structure: String(structure.structure ?? ''),
+      count: structure.count,
+    }));
 
   return (
     <div className={`${styles.page} pb-8`}>
@@ -175,19 +206,14 @@ const Dashboard: React.FC = () => {
             <h3 className="card-title">Pyramide des âges</h3>
             <span className="text-xs text-gray-400">par tranche · hommes / femmes</span>
           </div>
-          <div className="card-body" style={{ height: 280 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.pyramideAges} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="tranche" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={tooltipStyle} />
-                <Legend />
-                <Bar dataKey="hommes" name="Hommes" fill="#3b82f6" radius={[4,4,0,0]} />
-                <Bar dataKey="femmes" name="Femmes" fill="#ec4899" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartSection minHeight={280}>
+            <AgeAndCareerCharts
+              pyramideAges={stats.pyramideAges}
+              statutCarriereData={statutCarriereData}
+              statutColors={STATUT_CARRIERE_COLORS}
+              tooltipStyle={tooltipStyle}
+            />
+          </ChartSection>
         </div>
 
         {/* Statut de carrière — 1/3 */}
@@ -195,32 +221,15 @@ const Dashboard: React.FC = () => {
           <div className="card-header">
             <h3 className="card-title">Statut de carrière</h3>
           </div>
-          <div className="card-body" style={{ height: 280 }}>
-            {statutCarriereData.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">Aucune donnée</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statutCarriereData}
-                    cx="50%" cy="45%"
-                    innerRadius={55} outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                    nameKey="name"
-                    label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
-                    labelLine={false}
-                  >
-                    {statutCarriereData.map((entry: any) => (
-                      <Cell key={entry.key} fill={STATUT_CARRIERE_COLORS[entry.key] ?? '#94a3b8'} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any, n: any) => [v + ' agent(s)', n]} />
-                  <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+          <ChartSection minHeight={280}>
+            <AgeAndCareerCharts
+              pyramideAges={stats.pyramideAges}
+              statutCarriereData={statutCarriereData}
+              statutColors={STATUT_CARRIERE_COLORS}
+              tooltipStyle={tooltipStyle}
+              careerOnly
+            />
+          </ChartSection>
         </div>
       </div>
 
@@ -232,21 +241,14 @@ const Dashboard: React.FC = () => {
             <h3 className="card-title">Demandes de congés — 12 mois</h3>
             <span className="text-xs text-gray-400">Nouvelles demandes par mois</span>
           </div>
-          <div className="card-body" style={{ height: 260 }}>
-            {evolutionData.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">Aucune demande sur la période</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={evolutionData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="mois" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [v + ' demande(s)', 'Total']} />
-                  <Bar dataKey="total" name="Demandes" fill="#1e3a5f" radius={[4,4,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+          <ChartSection minHeight={260}>
+            <LeaveCharts
+              evolutionData={evolutionData}
+              congesTypeData={congesTypeData}
+              typeColors={TYPE_COLORS}
+              tooltipStyle={tooltipStyle}
+            />
+          </ChartSection>
         </div>
 
         {/* Congés par type (exercice en cours) */}
@@ -255,38 +257,15 @@ const Dashboard: React.FC = () => {
             <h3 className="card-title">Répartition des congés par type</h3>
             <span className="text-xs text-gray-400">Exercice {new Date().getFullYear()} · hors refusés/annulés</span>
           </div>
-          <div className="card-body" style={{ height: 260 }}>
-            {congesTypeData.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">Aucun congé cette année</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={congesTypeData}
-                    cx="50%" cy="45%"
-                    innerRadius={55} outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                    nameKey="name"
-                    label={({ name, percent }) => percent > 0.06 ? `${(percent * 100).toFixed(0)}%` : ''}
-                    labelLine={false}
-                  >
-                    {congesTypeData.map((_: any, i: number) => (
-                      <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(v: any, n: any, p: any) => [
-                      `${v} demande(s) · ${p.payload.jours} j`,
-                      n,
-                    ]}
-                  />
-                  <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+          <ChartSection minHeight={260}>
+            <LeaveCharts
+              evolutionData={evolutionData}
+              congesTypeData={congesTypeData}
+              typeColors={TYPE_COLORS}
+              tooltipStyle={tooltipStyle}
+              typeOnly
+            />
+          </ChartSection>
         </div>
       </div>
 
@@ -297,28 +276,9 @@ const Dashboard: React.FC = () => {
             <h3 className="card-title">Effectif par structure (top 8)</h3>
             <span className="text-xs text-gray-400">Nombre d'agents affectés</span>
           </div>
-          <div className="card-body" style={{ height: Math.max(220, structureData.length * 42) }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                layout="vertical"
-                data={structureData}
-                margin={{ left: 8, right: 32, top: 4, bottom: 4 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} allowDecimals={false} />
-                <YAxis
-                  type="category" dataKey="structure" width={160}
-                  axisLine={false} tickLine={false} tick={{ fontSize: 11 }}
-                />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [v + ' agent(s)', 'Effectif']} />
-                <Bar dataKey="count" name="Agents" fill="#1e3a5f" radius={[0,4,4,0]}>
-                  {structureData.map((_: any, i: number) => (
-                    <Cell key={i} fill={i === 0 ? '#1e3a5f' : i === 1 ? '#2d5fa0' : '#3b82f6'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartSection minHeight={Math.max(220, structureData.length * 42)}>
+            <StructureChart data={structureData} tooltipStyle={tooltipStyle} />
+          </ChartSection>
         </div>
       )}
 
@@ -349,7 +309,7 @@ const Dashboard: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                stats.retraitesProches?.map((a: any) => (
+                stats.retraitesProches?.map((a) => (
                   <tr key={a.id}>
                     <td className="font-medium">{a.matricule}</td>
                     <td>{a.nom}</td>
