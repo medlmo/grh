@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsDateString, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsNumber, IsInt, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 export class CreateDecisionDto {
   @IsString()
@@ -31,4 +32,17 @@ export class CreateDecisionDto {
 export class SignerDecisionDto {
   @IsOptional() @IsString()
   signataireNom?: string;
+}
+
+export class DecisionsQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  type?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  agentId?: number;
 }

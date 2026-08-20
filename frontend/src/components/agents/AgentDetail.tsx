@@ -27,6 +27,8 @@ import {
   Download,
 } from 'lucide-react';
 import api from '../../api/client';
+import type { TFunction } from 'i18next';
+import { AgentDetail as AgentDetailType, Anciennete } from '../../types';
 import {
   STATUT_STYLES,
   CARRIERE_STYLES,
@@ -41,8 +43,8 @@ type TabKey = 'overview' | 'career' | 'diplomas' | 'documents' | 'contact';
 const AgentDetail: React.FC = () => {
   const { id } = useParams();
   const { t } = useTranslation();
-  const [agent, setAgent] = useState<any>(null);
-  const [anciennete, setAnciennete] = useState<any>(null);
+  const [agent, setAgent] = useState<AgentDetailType | null>(null);
+  const [anciennete, setAnciennete] = useState<Anciennete | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
 
@@ -123,7 +125,7 @@ const AgentDetail: React.FC = () => {
             </div>
             <div className={`${styles['profile-quick-info']}`}>
               <QuickInfo icon={<IdCard size={16} />} label={t('agents.matricule')} value={agent.matricule} />
-              <QuickInfo icon={<CreditCard size={16} />} label={t('agents.cin')} value={agent.cin} />
+              <QuickInfo icon={<CreditCard size={16} />} label={t('agents.cin')} value={agent.cin ?? ''} />
               <QuickInfo icon={<Calendar size={16} />} label={t('agents.birth_date')} value={`${formatDate(agent.dateNaissance)} (${calculateAge(agent.dateNaissance)})`} />
               {anciennete && <QuickInfo icon={<CalendarClock size={16} />} label={t('agents.seniority')} value={`${anciennete.annees} ${t('agents.years')} ${anciennete.mois} ${t('agents.months')}`} />}
             </div>
@@ -193,7 +195,7 @@ const SectionTitle: React.FC<{ icon: React.ReactNode; title: string }> = ({ icon
   <h3 className={`${styles['info-section-title']}`}>{icon}{title}</h3>
 );
 
-const OverviewTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
+const OverviewTab: React.FC<{ agent: AgentDetailType; t: TFunction }> = ({ agent, t }) => (
   <>
     {/* Professional info */}
     <div className={`${styles['info-section']}`}>
@@ -255,12 +257,12 @@ const DateCard: React.FC<{ variant: string; icon: React.ReactNode; label: string
   </div>
 );
 
-const CareerTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
+const CareerTab: React.FC<{ agent: AgentDetailType; t: TFunction }> = ({ agent, t }) => (
   <div className={`${styles['info-section']}`}>
     <SectionTitle icon={<Clock size={18} />} title={t('agents.career_timeline')} />
-    {agent.carriereHistorique?.length > 0 ? (
+    {(agent.carriereHistorique?.length ?? 0) > 0 ? (
       <div className={`${styles['timeline']}`}>
-        {agent.carriereHistorique.map((event: any, idx: number) => (
+        {agent.carriereHistorique!.map((event, idx) => (
           <div key={event.id} className={`timeline-item ${idx === 0 ? 'latest' : ''}`}>
             <div className={`${styles['timeline-dot']}`} />
             <div className={`${styles['timeline-content']}`}>
@@ -289,12 +291,12 @@ const CareerTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
   </div>
 );
 
-const DiplomasTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
+const DiplomasTab: React.FC<{ agent: AgentDetailType; t: TFunction }> = ({ agent, t }) => (
   <div className={`${styles['info-section']}`}>
     <SectionTitle icon={<GraduationCap size={18} />} title={t('agents.diplomas')} />
-    {agent.diplomes?.length > 0 ? (
+    {(agent.diplomes?.length ?? 0) > 0 ? (
       <div className={`${styles['diplomas-grid']}`}>
-        {agent.diplomes.map((dip: any) => (
+        {agent.diplomes!.map((dip) => (
           <div key={dip.id} className={`${styles['diploma-card']}`}>
             <div className={`${styles['diploma-icon']}`}><GraduationCap size={24} /></div>
             <div className={`${styles['diploma-content']}`}>
@@ -313,12 +315,12 @@ const DiplomasTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
   </div>
 );
 
-const DocumentsTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
+const DocumentsTab: React.FC<{ agent: AgentDetailType; t: TFunction }> = ({ agent, t }) => (
   <div className={`${styles['info-section']}`}>
     <SectionTitle icon={<FileText size={18} />} title={t('agents.documents')} />
-    {agent.piecesJointes?.length > 0 ? (
+    {(agent.piecesJointes?.length ?? 0) > 0 ? (
       <div className={`${styles['documents-list']}`}>
-        {agent.piecesJointes.map((doc: any) => (
+        {agent.piecesJointes!.map((doc) => (
           <div key={doc.id} className={`${styles['document-item']}`}>
             <div className={`${styles['document-icon']}`}><FileText size={20} /></div>
             <div className={`${styles['document-content']}`}>
@@ -336,7 +338,7 @@ const DocumentsTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
   </div>
 );
 
-const ContactTab: React.FC<{ agent: any; t: any }> = ({ agent, t }) => (
+const ContactTab: React.FC<{ agent: AgentDetailType; t: TFunction }> = ({ agent, t }) => (
   <>
     <div className={`${styles['info-section']}`}>
       <SectionTitle icon={<Mail size={18} />} title={t('agents.contact_info')} />

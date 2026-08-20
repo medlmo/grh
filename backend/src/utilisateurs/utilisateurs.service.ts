@@ -1,28 +1,38 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUtilisateurDto, UpdateUtilisateurDto } from './dto/utilisateur.dto';
+import { CreateUtilisateurDto, UpdateUtilisateurDto, UtilisateursQueryDto } from './dto/utilisateur.dto';
 import * as bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UtilisateursService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.utilisateur.findMany({
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        statut: true,
-        agentId: true,
-        derniereConn: true,
-        createdAt: true,
-        agent: {
-          select: { nomFr: true, prenomFr: true, matricule: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+  async findAll(params: UtilisateursQueryDto) {
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.utilisateur.findMany({
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          statut: true,
+          agentId: true,
+          derniereConn: true,
+          createdAt: true,
+          agent: {
+            select: { nomFr: true, prenomFr: true, matricule: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+      }),
+      this.prisma.utilisateur.count(),
+    ]);
+    return {
+      data,
+      meta: { page: params.page, limit: params.limit, total, totalPages: Math.ceil(total / params.limit) },
+    };
   }
 
   async findOne(id: number) {
@@ -66,12 +76,14 @@ export class UtilisateursService {
   async update(id: number, dto: UpdateUtilisateurDto) {
     await this.findOne(id);
 
-    const data: any = { ...dto };
-    delete data.ancienMotDePasse;
-
-    if (dto.motDePasse) {
-      data.motDePasse = await bcrypt.hash(dto.motDePasse, 10);
+    const data: Prisma.UtilisateurUpdateInput = {};
+    if (dto.email !== undefined) data.email = dto.email;
+    if (dto.role !== undefined) data.role = dto.role;
+    if (dto.statut !== undefined) data.statut = dto.statut;
+    if (dto.agentId !== undefined) {
+      data.agent = { connect: { id: dto.agentId } };
     }
+    if (dto.motDePasse) data.motDePasse = await bcrypt.hash(dto.motDePasse, 10);
     
     if (dto.email) {
       const existing = await this.prisma.utilisateur.findUnique({ where: { email: dto.email } });

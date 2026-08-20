@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Save, Mail, ShieldAlert, KeyRound } from 'lucide-react';
 import api from '../../api/client';
 import styles from './CompteForm.module.css';
+import { AgentSummary } from '../../types';
 
 const CompteForm: React.FC = () => {
   const { id } = useParams();
@@ -18,13 +19,13 @@ const CompteForm: React.FC = () => {
     statut: 'ACTIF',
     agentId: ''
   });
-  const [agents, setAgents] = useState<any[]>([]);
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     // Fetch agents for the dropdown
-    api.get('/agents').then(res => setAgents(res.data)).catch(console.error);
+    api.get('/agents', { params: { limit: 100 } }).then(res => setAgents(res.data.data)).catch(console.error);
 
     if (isEdit) {
       api.get(`/utilisateurs/${id}`)
@@ -49,7 +50,13 @@ const CompteForm: React.FC = () => {
     setIsSubmitting(true);
     setError('');
 
-    const payload: any = {
+    const payload: {
+      email: string;
+      role: string;
+      statut: string;
+      agentId?: number;
+      motDePasse?: string;
+    } = {
       email: formData.email,
       role: formData.role,
       statut: formData.statut,
@@ -73,9 +80,10 @@ const CompteForm: React.FC = () => {
         await api.post('/utilisateurs', payload);
       }
       navigate('/comptes');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.response?.data?.message || 'Une erreur est survenue.');
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || 'Une erreur est survenue.');
     } finally {
       setIsSubmitting(false);
     }

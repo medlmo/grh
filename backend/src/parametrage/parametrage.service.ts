@@ -10,6 +10,18 @@ import {
   CreateStructureDto,
   UpdateStructureDto,
 } from './dto/parametrage.dto';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
+
+export type StructureTreeNode = {
+  id: number;
+  code: string;
+  libelleFr: string;
+  libelleAr: string;
+  type: string;
+  parentId: number | null;
+  agentCount: number;
+  enfants: StructureTreeNode[];
+};
 
 @Injectable()
 export class ParametrageService {
@@ -31,8 +43,9 @@ export class ParametrageService {
 
   // ── Corps ───────────────────────────────────────────────────────────────────
 
-  async getCorps() {
-    return this.prisma.corps.findMany({
+  async getCorps(params: PaginationQueryDto) {
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.corps.findMany({
       include: {
         cadres: {
           include: {
@@ -47,15 +60,26 @@ export class ParametrageService {
         _count: { select: { agents: true } },
       },
       orderBy: { code: 'asc' },
-    });
+      skip: (params.page - 1) * params.limit,
+      take: params.limit,
+      }),
+      this.prisma.corps.count(),
+    ]);
+    return this.paginate(data, total, params);
   }
 
-  async getCorpsCadres(corpsId: number) {
-    return this.prisma.cadre.findMany({
+  async getCorpsCadres(corpsId: number, params: PaginationQueryDto) {
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.cadre.findMany({
       where: { corpsId },
       include: { _count: { select: { agents: true } } },
       orderBy: { code: 'asc' },
-    });
+      skip: (params.page - 1) * params.limit,
+      take: params.limit,
+      }),
+      this.prisma.cadre.count({ where: { corpsId } }),
+    ]);
+    return this.paginate(data, total, params);
   }
 
   async createCorps(dto: CreateCorpsDto) {
@@ -106,12 +130,18 @@ export class ParametrageService {
 
   // ── Cadres ──────────────────────────────────────────────────────────────────
 
-  async getCadreGrades(cadreId: number) {
-    return this.prisma.grade.findMany({
+  async getCadreGrades(cadreId: number, params: PaginationQueryDto) {
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.grade.findMany({
       where: { cadreId },
       include: { _count: { select: { agents: true } } },
       orderBy: { code: 'asc' },
-    });
+      skip: (params.page - 1) * params.limit,
+      take: params.limit,
+      }),
+      this.prisma.grade.count({ where: { cadreId } }),
+    ]);
+    return this.paginate(data, total, params);
   }
 
   async createCadre(dto: CreateCadreDto) {
@@ -153,12 +183,18 @@ export class ParametrageService {
 
   // ── Grades ──────────────────────────────────────────────────────────────────
 
-  async getGradeEchelons(gradeId: number) {
-    return this.prisma.echelon.findMany({
+  async getGradeEchelons(gradeId: number, params: PaginationQueryDto) {
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.echelon.findMany({
       where: { gradeId },
       include: { _count: { select: { agents: true } } },
       orderBy: { numero: 'asc' },
-    });
+      skip: (params.page - 1) * params.limit,
+      take: params.limit,
+      }),
+      this.prisma.echelon.count({ where: { gradeId } }),
+    ]);
+    return this.paginate(data, total, params);
   }
 
   async createGrade(dto: CreateGradeDto) {
@@ -219,24 +255,27 @@ export class ParametrageService {
 
   // ── Jours fériés ─────────────────────────────────────────────────────────────
 
-  async getJoursFeries(annee?: number) {
+  async getJoursFeries(annee: number | undefined, params: PaginationQueryDto) {
+    let all;
     if (!annee) {
-      return this.prisma.jourFerie.findMany({ orderBy: { date: 'asc' } });
+      all = await this.prisma.jourFerie.findMany({ orderBy: { date: 'asc' } });
+    } else {
+      const startOfYear = new Date(`${annee}-01-01`);
+      const endOfYear   = new Date(`${annee}-12-31`);
+      const mobiles = await this.prisma.jourFerie.findMany({
+        where: { estMobile: true, date: { gte: startOfYear, lte: endOfYear } },
+      });
+      const fixes = await this.prisma.jourFerie.findMany({ where: { estMobile: false } });
+      const fixesMapped = fixes.map((f) => {
+        const d = new Date(f.date);
+        d.setFullYear(annee);
+        return { ...f, date: d };
+      });
+      all = [...mobiles, ...fixesMapped];
     }
-    const startOfYear = new Date(`${annee}-01-01`);
-    const endOfYear   = new Date(`${annee}-12-31`);
-    const mobiles = await this.prisma.jourFerie.findMany({
-      where: { estMobile: true, date: { gte: startOfYear, lte: endOfYear } },
-    });
-    const fixes = await this.prisma.jourFerie.findMany({ where: { estMobile: false } });
-    const fixesMapped = fixes.map((f) => {
-      const d = new Date(f.date);
-      d.setFullYear(annee);
-      return { ...f, date: d };
-    });
-    const all = [...mobiles, ...fixesMapped];
     all.sort((a, b) => a.date.getTime() - b.date.getTime());
-    return all;
+    const start = (params.page - 1) * params.limit;
+    return this.paginate(all.slice(start, start + params.limit), all.length, params);
   }
 
   async createJourFerie(dto: CreateJourFerieDto) {
@@ -256,14 +295,20 @@ export class ParametrageService {
 
   // ── Structures (organigramme) ────────────────────────────────────────────────
 
-  async getStructures() {
-    return this.prisma.structure.findMany({
+  async getStructures(params: PaginationQueryDto) {
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.structure.findMany({
       select: { id: true, code: true, libelleFr: true, libelleAr: true, type: true, parentId: true },
       orderBy: { code: 'asc' },
-    });
+      skip: (params.page - 1) * params.limit,
+      take: params.limit,
+      }),
+      this.prisma.structure.count(),
+    ]);
+    return this.paginate(data, total, params);
   }
 
-  async getStructuresArbre() {
+  async getStructuresArbre(params: PaginationQueryDto) {
     const all = await this.prisma.structure.findMany({
       include: { _count: { select: { agents: true } } },
       orderBy: { libelleFr: 'asc' },
@@ -275,13 +320,22 @@ export class ParametrageService {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     }
-    const buildTree = (parentId: number | null): any[] =>
+    const buildTree = (parentId: number | null): StructureTreeNode[] =>
       (map.get(parentId) ?? []).map((n) => ({
         id: n.id, code: n.code, libelleFr: n.libelleFr, libelleAr: n.libelleAr,
         type: n.type, parentId: n.parentId,
         agentCount: n._count.agents, enfants: buildTree(n.id),
       }));
-    return buildTree(null);
+    const tree = buildTree(null);
+    const start = (params.page - 1) * params.limit;
+    return this.paginate(tree.slice(start, start + params.limit), tree.length, params);
+  }
+
+  private paginate<T>(data: T[], total: number, params: PaginationQueryDto) {
+    return {
+      data,
+      meta: { page: params.page, limit: params.limit, total, totalPages: Math.ceil(total / params.limit) },
+    };
   }
 
   async createStructure(dto: CreateStructureDto) {

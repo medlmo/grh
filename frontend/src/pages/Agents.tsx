@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { AgentSummary, Structure } from '../types';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
 import {
@@ -34,7 +35,7 @@ import {
 
 type SortKey = 'name' | 'name_desc' | 'matricule' | 'recent' | 'oldest';
 
-const filterAndSortAgents = (agents: any[], filters: {
+const filterAndSortAgents = (agents: AgentSummary[], filters: {
   statut: string;
   structure: string;
   gender: string;
@@ -69,8 +70,8 @@ const filterAndSortAgents = (agents: any[], filters: {
 
 const AgentsList: React.FC = () => {
   const { t } = useTranslation();
-  const [agents, setAgents] = useState<any[]>([]);
-  const [structures, setStructures] = useState<any[]>([]);
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
+  const [structures, setStructures] = useState<Structure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatut, setFilterStatut] = useState('');
@@ -84,26 +85,36 @@ const AgentsList: React.FC = () => {
     isOpen: false,
     agentId: null,
   });
-
-  const fetchAgents = useCallback(async () => {
-    try {
-      const response = await api.get('/agents', { params: { search: searchTerm } });
-      setAgents(response.data);
-    } catch (error) {
-      console.error('Error fetching agents:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchTerm]);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchAgents(), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm, fetchAgents]);
+    setIsLoading(true);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await api.get('/agents', {
+          params: { search: searchTerm, limit: 100 },
+          signal: controller.signal,
+        });
+        setAgents(response.data.data);
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name !== 'CanceledError') {
+          console.error('Error fetching agents:', error);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchTerm, refreshCount]);
 
   useEffect(() => {
-    api.get('/parametrage/structures')
-      .then((res) => setStructures(res.data))
+    api.get('/parametrage/structures', { params: { limit: 100 } })
+      .then((res) => setStructures(res.data.data))
       .catch(console.error);
   }, []);
 
@@ -113,7 +124,7 @@ const AgentsList: React.FC = () => {
     try {
       await api.delete(`/agents/${id}`);
       setDeleteModal({ isOpen: false, agentId: null });
-      fetchAgents();
+      setRefreshCount((c) => c + 1);
     } catch (error) {
       console.error('Error deleting agent:', error);
       setDeleteModal({ isOpen: false, agentId: null });

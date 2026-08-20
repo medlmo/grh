@@ -6,10 +6,11 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Routes, Route, Link } from 'react-router-dom';
 import CompteForm from '../components/comptes/CompteForm';
 import ConfirmModal from '../components/ui/ConfirmModal';
+import { Utilisateur } from '../types';
 
 const ComptesList: React.FC = () => {
   const { t } = useTranslation();
-  const [comptes, setComptes] = useState<any[]>([]);
+  const [comptes, setComptes] = useState<Utilisateur[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; compteId: number | null }>({
     isOpen: false,
@@ -18,8 +19,8 @@ const ComptesList: React.FC = () => {
 
   const fetchComptes = async () => {
     try {
-      const response = await api.get('/utilisateurs');
-      setComptes(response.data);
+      const response = await api.get('/utilisateurs', { params: { limit: 100 } });
+      setComptes(response.data.data);
     } catch (error) {
       console.error('Error fetching comptes:', error);
     } finally {

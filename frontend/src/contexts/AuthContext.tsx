@@ -9,11 +9,16 @@ interface User {
   nomComplet: string;
 }
 
+interface LoginCredentials {
+  email: string;
+  motDePasse: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (data: any) => Promise<void>;
+  login: (data: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -25,8 +30,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
+      if (localStorage.getItem('accessToken')) {
         try {
           const response = await api.get('/auth/me');
           setUser({
@@ -38,7 +42,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
         } catch (error) {
           localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
         }
       }
       setIsLoading(false);
@@ -47,11 +50,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     checkAuth();
   }, []);
 
-  const login = async (credentials: any) => {
+  const login = async (credentials: LoginCredentials) => {
     const response = await api.post('/auth/login', credentials);
-    const { accessToken, refreshToken, user: userData } = response.data;
+    const { accessToken, user: userData } = response.data;
     localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
     setUser(userData);
   };
 
@@ -62,7 +64,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error(error);
     } finally {
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       setUser(null);
     }
   };

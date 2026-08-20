@@ -8,10 +8,14 @@ import { DecisionsModule } from './decisions/decisions.module';
 import { ParametrageModule } from './parametrage/parametrage.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UtilisateursModule } from './utilisateurs/utilisateurs.module';
+import { validateConfiguration } from './config/config.validation';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validate: validateConfiguration,
+    }),
     PrismaModule,
     AuthModule,
     AgentsModule,

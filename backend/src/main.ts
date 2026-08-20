@@ -2,9 +2,40 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const corsOrigins = (process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (
+    corsOrigins.length === 0 ||
+    corsOrigins.includes('*') ||
+    corsOrigins.some((origin) => {
+      try {
+        return new URL(origin).origin !== origin;
+      } catch {
+        return true;
+      }
+    })
+  ) {
+    throw new Error('CORS_ORIGIN est obligatoire.');
+  }
+
+  const app = await NestFactory.create(AppModule);
+  app.use(helmet());
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Origine CORS non autorisée.'), false);
+    },
+    credentials: true,
+  });
 
   app.setGlobalPrefix('api');
 

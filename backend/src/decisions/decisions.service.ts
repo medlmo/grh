@@ -1,20 +1,30 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateDecisionDto } from './dto/decision.dto';
+import { CreateDecisionDto, DecisionsQueryDto } from './dto/decision.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class DecisionsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params?: { type?: string; agentId?: number }) {
-    const where: any = {};
+  async findAll(params: DecisionsQueryDto) {
+    const where: Prisma.DecisionAdminWhereInput = {};
     if (params?.type) where.type = params.type;
     if (params?.agentId) where.agentId = Number(params.agentId);
-    return this.prisma.decisionAdmin.findMany({
-      where,
-      include: { agent: { select: { id: true, nomFr: true, prenomFr: true, matricule: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.decisionAdmin.findMany({
+        where,
+        include: { agent: { select: { id: true, nomFr: true, prenomFr: true, matricule: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+      }),
+      this.prisma.decisionAdmin.count({ where }),
+    ]);
+    return {
+      data,
+      meta: { page: params.page, limit: params.limit, total, totalPages: Math.ceil(total / params.limit) },
+    };
   }
 
   async findOne(id: number) {

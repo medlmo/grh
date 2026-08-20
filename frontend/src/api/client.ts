@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,14 +21,13 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     // Never intercept auth endpoints — let the caller handle their errors directly
-    const isAuthEndpoint = originalRequest?.url?.includes('/auth/');
+    const isAuthEndpoint = ['/auth/login', '/auth/refresh', '/auth/logout'].some((path) =>
+      originalRequest?.url?.includes(path),
+    );
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) throw new Error('No refresh token');
-
-        const response = await axios.post('/api/auth/refresh', { refreshToken });
+        const response = await axios.post('/api/auth/refresh', undefined, { withCredentials: true });
         const { accessToken } = response.data;
 
         localStorage.setItem('accessToken', accessToken);
@@ -36,7 +36,6 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
         // Avoid redirect loop if already on the login page
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';

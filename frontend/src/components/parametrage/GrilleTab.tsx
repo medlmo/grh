@@ -13,6 +13,8 @@ interface Cadre   { id: number; code: string; libelleFr: string; libelleAr: stri
 interface Grade   { id: number; code: string; libelleFr: string; libelleAr: string; cadreId: number;  _count?: { agents: number } }
 interface Echelon { id: number; numero: number; dureeMinMois: number; gradeId: number; _count?: { agents: number } }
 
+type GrilleItem = Corps | Cadre | Grade | Echelon;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const COLUMNS = [
@@ -62,19 +64,19 @@ const ItemRow: React.FC<ItemRowProps> = ({ label, sub, selected, hasChildren, ag
 
 interface ColumnProps {
   title: string;
-  Icon: React.FC<any>;
+  Icon: React.ElementType;
   color: string;
   bg: string;
-  items: any[];
+  items: GrilleItem[];
   selectedId: number | null;
   disabled?: boolean;
-  renderLabel: (item: any) => string;
-  renderSub?: (item: any) => string;
+  renderLabel: (item: GrilleItem) => string;
+  renderSub?: (item: GrilleItem) => string;
   hasChildren?: boolean;
   onSelect: (id: number) => void;
   onAdd: () => void;
-  onEdit: (item: any) => void;
-  onDelete: (item: any) => void;
+  onEdit: (item: GrilleItem) => void;
+  onDelete: (item: GrilleItem) => void;
   emptyMsg: string;
 }
 
@@ -130,7 +132,7 @@ type ModalMode = 'add' | 'edit';
 interface ModalState {
   kind: ModalKind;
   mode: ModalMode;
-  item?: any;
+  item?: GrilleItem;
 }
 
 interface FormModalProps {
@@ -143,7 +145,7 @@ interface FormModalProps {
   selectedGradeId: number | null;
 }
 
-const FIELD_DEFS: Record<ModalKind, { key: ModalKind; icon: any; color: string; bg: string }> = {
+const FIELD_DEFS: Record<ModalKind, { key: ModalKind; icon: React.ElementType; color: string; bg: string }> = {
   corps:   { key: 'corps',   icon: Layers,      color: '#2563eb', bg: '#dbeafe' },
   cadre:   { key: 'cadre',   icon: BookOpen,    color: '#7c3aed', bg: '#ede9fe' },
   grade:   { key: 'grade',   icon: Award,       color: '#0891b2', bg: '#cffafe' },
@@ -162,17 +164,19 @@ const FormModal: React.FC<FormModalProps> = ({ state, onClose, onSaved, selected
 
   const isEchelon = kind === 'echelon';
 
+  const namedItem = item as (Corps | Cadre | Grade) | undefined;
+  const echelonItem = item as Echelon | undefined;
   const [form, setForm] = useState({
-    code:         item?.code         ?? '',
-    libelleFr:    item?.libelleFr    ?? '',
-    libelleAr:    item?.libelleAr    ?? '',
-    numero:       item?.numero       ?? '',
-    dureeMinMois: item?.dureeMinMois ?? 24,
+    code:         namedItem?.code         ?? '',
+    libelleFr:    namedItem?.libelleFr    ?? '',
+    libelleAr:    namedItem?.libelleAr    ?? '',
+    numero:       echelonItem?.numero       ?? '',
+    dureeMinMois: echelonItem?.dureeMinMois ?? 24,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
-  const set = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
+  const set = (k: string, v: string | number) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,9 +188,9 @@ const FormModal: React.FC<FormModalProps> = ({ state, onClose, onSaved, selected
     try {
       if (isEdit) {
         if (isEchelon) {
-          await api.put(`/parametrage/echelons/${item.id}`, { numero: Number(form.numero), dureeMinMois: Number(form.dureeMinMois) });
+          await api.put(`/parametrage/echelons/${item!.id}`, { numero: Number(form.numero), dureeMinMois: Number(form.dureeMinMois) });
         } else {
-          await api.put(`/parametrage/${kind}s/${item.id}`, { code: form.code, libelleFr: form.libelleFr, libelleAr: form.libelleAr });
+          await api.put(`/parametrage/${kind}s/${item!.id}`, { code: form.code, libelleFr: form.libelleFr, libelleAr: form.libelleAr });
         }
       } else {
         if (kind === 'corps') {
@@ -200,8 +204,8 @@ const FormModal: React.FC<FormModalProps> = ({ state, onClose, onSaved, selected
         }
       }
       onSaved();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Une erreur est survenue.');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Une erreur est survenue.');
       setSaving(false);
     }
   };
@@ -217,8 +221,8 @@ const FormModal: React.FC<FormModalProps> = ({ state, onClose, onSaved, selected
             <span className={styles['fm-title']}>
               {isEdit ? `Modifier — ${LABELS[kind]}` : `Ajouter — ${LABELS[kind]}`}
             </span>
-            {isEdit && item && !isEchelon && (
-              <span className={styles['fm-sub']}>{item.code}</span>
+            {isEdit && namedItem && !isEchelon && (
+              <span className={styles['fm-sub']}>{namedItem.code}</span>
             )}
           </div>
           <button className="btn-icon" style={{ marginLeft: 'auto', color: 'var(--text-muted)' }} onClick={onClose}>
@@ -289,7 +293,7 @@ const FormModal: React.FC<FormModalProps> = ({ state, onClose, onSaved, selected
 
 interface DeleteProps {
   kind: ModalKind;
-  item: any;
+  item: GrilleItem;
   onClose: () => void;
   onConfirmed: () => void;
 }
@@ -297,7 +301,9 @@ const DeleteConfirm: React.FC<DeleteProps> = ({ kind, item, onClose, onConfirmed
   const [deleting, setDeleting] = useState(false);
   const [error,    setError]    = useState('');
 
-  const label = kind === 'echelon' ? `Échelon ${item.numero}` : item.libelleFr;
+  const label = kind === 'echelon'
+    ? `Échelon ${(item as Echelon).numero}`
+    : (item as Corps | Cadre | Grade).libelleFr;
   const ENDPOINTS: Record<string, string> = { corps: 'corps', cadre: 'cadres', grade: 'grades', echelon: 'echelons' };
   const endpoint = ENDPOINTS[kind];
 
@@ -306,8 +312,8 @@ const DeleteConfirm: React.FC<DeleteProps> = ({ kind, item, onClose, onConfirmed
     try {
       await api.delete(`/parametrage/${endpoint}/${item.id}`);
       onConfirmed();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Suppression impossible.');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Suppression impossible.');
       setDeleting(false);
     }
   };
@@ -356,36 +362,36 @@ const GrilleTab: React.FC = () => {
   const [selectedGrade,  setSelectedGrade]  = useState<number | null>(null);
 
   const [modal,  setModal]  = useState<ModalState | null>(null);
-  const [delTarget, setDelTarget] = useState<{ kind: ModalKind; item: any } | null>(null);
+  const [delTarget, setDelTarget] = useState<{ kind: ModalKind; item: GrilleItem } | null>(null);
 
   // ── Data loaders ──────────────────────────────────────────────────────────
 
   const loadCorps = useCallback(async () => {
     try {
-      const res = await api.get('/parametrage/corps');
+      const res = await api.get('/parametrage/corps', { params: { limit: 100 } });
       // flatten: corps list with agent counts
-      setCorps(res.data.map((c: any) => ({ ...c, _count: { agents: c._count?.agents ?? 0 } })));
+      setCorps((res.data.data as Corps[]).map((c) => ({ ...c, _count: { agents: c._count?.agents ?? 0 } })));
     } catch { setCorps([]); }
   }, []);
 
   const loadCadres = useCallback(async (corpsId: number) => {
     try {
-      const res = await api.get(`/parametrage/corps/${corpsId}/cadres`);
-      setCadres(res.data);
+      const res = await api.get(`/parametrage/corps/${corpsId}/cadres`, { params: { limit: 100 } });
+      setCadres(res.data.data);
     } catch { setCadres([]); }
   }, []);
 
   const loadGrades = useCallback(async (cadreId: number) => {
     try {
-      const res = await api.get(`/parametrage/cadres/${cadreId}/grades`);
-      setGrades(res.data);
+      const res = await api.get(`/parametrage/cadres/${cadreId}/grades`, { params: { limit: 100 } });
+      setGrades(res.data.data);
     } catch { setGrades([]); }
   }, []);
 
   const loadEchelons = useCallback(async (gradeId: number) => {
     try {
-      const res = await api.get(`/parametrage/grades/${gradeId}/echelons`);
-      setEchelons(res.data);
+      const res = await api.get(`/parametrage/grades/${gradeId}/echelons`, { params: { limit: 100 } });
+      setEchelons(res.data.data);
     } catch { setEchelons([]); }
   }, []);
 
@@ -465,8 +471,8 @@ const GrilleTab: React.FC = () => {
         <Column
           title="Corps" Icon={COLUMNS[0].Icon} color={COLUMNS[0].color} bg={COLUMNS[0].bg}
           items={corps} selectedId={selectedCorps}
-          renderLabel={(c) => c.libelleFr}
-          renderSub={(c)   => c.code}
+          renderLabel={(c) => (c as Corps).libelleFr}
+          renderSub={(c)   => (c as Corps).code}
           hasChildren
           onSelect={handleSelectCorps}
           onAdd={() => setModal({ kind: 'corps', mode: 'add' })}
@@ -478,8 +484,8 @@ const GrilleTab: React.FC = () => {
         <Column
           title="Cadres" Icon={COLUMNS[1].Icon} color={COLUMNS[1].color} bg={COLUMNS[1].bg}
           items={cadres} selectedId={selectedCadre} disabled={!selectedCorps}
-          renderLabel={(c) => c.libelleFr}
-          renderSub={(c)   => c.code}
+          renderLabel={(c) => (c as Cadre).libelleFr}
+          renderSub={(c)   => (c as Cadre).code}
           hasChildren
           onSelect={handleSelectCadre}
           onAdd={() => setModal({ kind: 'cadre', mode: 'add' })}
@@ -491,8 +497,8 @@ const GrilleTab: React.FC = () => {
         <Column
           title="Grades" Icon={COLUMNS[2].Icon} color={COLUMNS[2].color} bg={COLUMNS[2].bg}
           items={grades} selectedId={selectedGrade} disabled={!selectedCadre}
-          renderLabel={(g) => g.libelleFr}
-          renderSub={(g)   => g.code}
+          renderLabel={(g) => (g as Grade).libelleFr}
+          renderSub={(g)   => (g as Grade).code}
           hasChildren
           onSelect={handleSelectGrade}
           onAdd={() => setModal({ kind: 'grade', mode: 'add' })}
@@ -504,8 +510,8 @@ const GrilleTab: React.FC = () => {
         <Column
           title="Échelons" Icon={COLUMNS[3].Icon} color={COLUMNS[3].color} bg={COLUMNS[3].bg}
           items={echelons} selectedId={null} disabled={!selectedGrade}
-          renderLabel={(e) => `Échelon ${e.numero}`}
-          renderSub={(e)   => `Ancienneté min. : ${e.dureeMinMois} mois`}
+          renderLabel={(e) => `Échelon ${(e as Echelon).numero}`}
+          renderSub={(e)   => `Ancienneté min. : ${(e as Echelon).dureeMinMois} mois`}
           hasChildren={false}
           onSelect={() => {}}
           onAdd={() => setModal({ kind: 'echelon', mode: 'add' })}

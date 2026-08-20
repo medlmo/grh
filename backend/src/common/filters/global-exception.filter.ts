@@ -27,9 +27,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       if (typeof resp === 'string') {
         message = resp;
       } else if (typeof resp === 'object' && resp !== null) {
-        const r = resp as any;
-        message = r.message || message;
-        error = r.error || error;
+          const responseBody = resp as { message?: string | string[]; error?: string };
+          if (responseBody.message) {
+            message = Array.isArray(responseBody.message)
+              ? responseBody.message.join(', ')
+              : responseBody.message;
+          }
+          if (responseBody.error) error = responseBody.error;
       }
     } else {
       this.logger.error(exception);

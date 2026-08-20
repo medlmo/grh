@@ -1,5 +1,6 @@
 import { IsString, IsEmail, IsEnum, IsOptional, IsInt, MinLength } from 'class-validator';
 import { Role, StatutCompte } from '@prisma/client';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 export class CreateUtilisateurDto {
   @IsEmail()
@@ -44,3 +45,5 @@ export class UpdateUtilisateurDto {
   @IsOptional()
   agentId?: number;
 }
+
+export class UtilisateursQueryDto extends PaginationQueryDto {}

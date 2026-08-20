@@ -7,14 +7,20 @@ import {
   IsNotEmpty,
   MaxLength,
   IsUrl,
+  IsInt,
+  IsBooleanString,
+  Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { TypeConge } from '@prisma/client';
+import { Transform, Type } from 'class-transformer';
+import { StatutDemande, TypeConge } from '@prisma/client';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 export class CreateCongeDto {
+  @IsOptional()
   @Type(() => Number)
-  @IsNumber()
-  agentId: number;
+  @IsInt()
+  @Min(1)
+  agentId?: number;
 
   @IsEnum(TypeConge)
   type: TypeConge;
@@ -63,4 +69,56 @@ export class RefuserCongeDto {
   @IsString()
   @MaxLength(2000)
   commentaire?: string;
+}
+
+export class CongesQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsBooleanString()
+  mine?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  agentId?: number;
+
+  @IsOptional()
+  @IsEnum(StatutDemande)
+  statut?: StatutDemande;
+
+  @IsOptional()
+  @IsEnum(TypeConge)
+  type?: TypeConge;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  structureId?: number;
+
+  @IsOptional()
+  @IsDateString()
+  debut?: string;
+
+  @IsOptional()
+  @IsDateString()
+  fin?: string;
+}
+
+export class CalendrierQueryDto extends PaginationQueryDto {
+  @IsDateString()
+  debut: string;
+
+  @IsDateString()
+  fin: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  structureId?: number;
+
+  @IsOptional()
+  @IsEnum(TypeConge)
+  type?: TypeConge;
 }

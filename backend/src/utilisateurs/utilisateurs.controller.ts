@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { UtilisateursService } from './utilisateurs.service';
-import { CreateUtilisateurDto, UpdateUtilisateurDto } from './dto/utilisateur.dto';
+import { CreateUtilisateurDto, UpdateUtilisateurDto, UtilisateursQueryDto } from './dto/utilisateur.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -13,8 +13,8 @@ export class UtilisateursController {
   constructor(private readonly utilisateursService: UtilisateursService) {}
 
   @Get()
-  findAll() {
-    return this.utilisateursService.findAll();
+  findAll(@Query() query: UtilisateursQueryDto) {
+    return this.utilisateursService.findAll(query);
   }
 
   @Get(':id')

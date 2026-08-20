@@ -73,8 +73,8 @@ const FeriesTab: React.FC = () => {
   const fetchFeries = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get('/parametrage/feries', { params: { annee } });
-      setFeries(response.data);
+      const response = await api.get('/parametrage/feries', { params: { annee, limit: 100 } });
+      setFeries(response.data.data);
     } catch (error) {
       console.error('Error fetching feries:', error);
       pushToast('error', t('holidays.error_loading'));
@@ -164,10 +164,9 @@ const FeriesTab: React.FC = () => {
       setForm({ libelleFr: '', libelleAr: '', date: '', estMobile: false });
       pushToast('success', t('holidays.success_created'));
       fetchFeries();
-    } catch (error: any) {
-      setFormError(
-        error.response?.data?.message || t('holidays.error_create')
-      );
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setFormError(msg || t('holidays.error_create'));
     } finally {
       setIsSubmitting(false);
     }

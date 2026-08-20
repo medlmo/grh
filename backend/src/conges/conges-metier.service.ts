@@ -6,6 +6,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TypeConge, StatutDemande, Prisma } from '@prisma/client';
 import { CongesSoldeService } from './conges-solde.service';
+import { Agent } from '@prisma/client';
 
 @Injectable()
 export class CongesMetierService {
@@ -19,13 +20,13 @@ export class CongesMetierService {
   // ============================================================
 
   async verifierReglesMetier(ctx: {
-    agent: any;
+    agent: Pick<Agent, 'id' | 'sexe'>;
     type: TypeConge;
     dateDebut: Date;
     dateFin: Date;
     nombreJours: number;
     justificatifUrl?: string;
-    config?: any;
+    config?: Prisma.TypeCongeConfigGetPayload<{}> | null;
     excludeCongeId?: number;
   }) {
     const { agent, type, nombreJours, excludeCongeId } = ctx;

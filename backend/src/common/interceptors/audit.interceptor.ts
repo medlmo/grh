@@ -1,13 +1,19 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Observable, tap } from 'rxjs';
+import { Request } from 'express';
+import { AuthenticatedUser } from '../types/authenticated-user';
+
+type AuditedRequest = Request & { user?: AuthenticatedUser };
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(AuditInterceptor.name);
+
   constructor(private prisma: PrismaService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const request = context.switchToHttp().getRequest<AuditedRequest>();
     const method = request.method;
     // Journaliser uniquement les mutations
     if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -25,7 +31,12 @@ export class AuditInterceptor implements NestInterceptor {
               ip: request.ip,
             },
           })
-          .catch(() => {});
+          .catch((error: unknown) => {
+            this.logger.error(
+              `Échec de journalisation de l'action ${method} ${request.url}`,
+              error instanceof Error ? error.stack : String(error),
+            );
+          });
       }),
     );
   }

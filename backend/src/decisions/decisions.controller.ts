@@ -10,7 +10,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { DecisionsService } from './decisions.service';
-import { CreateDecisionDto } from './dto/decision.dto';
+import { CreateDecisionDto, DecisionsQueryDto } from './dto/decision.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -24,11 +24,8 @@ export class DecisionsController {
 
   @Get()
   @Roles(Role.ADMIN, Role.DRH, Role.CHEF_DIVISION, Role.DIRECTEUR_GENERAL, Role.PRESIDENT)
-  findAll(@Query('type') type?: string, @Query('agentId') agentId?: string) {
-    return this.decisions.findAll({
-      type,
-      agentId: agentId ? Number(agentId) : undefined,
-    });
+  findAll(@Query() query: DecisionsQueryDto) {
+    return this.decisions.findAll(query);
   }
 
   @Get(':id')

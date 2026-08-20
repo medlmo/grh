@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import { Decision } from '../types';
 import styles from './Decisions.module.css';
 import { Plus, Search, FileText } from 'lucide-react';
 import { format } from 'date-fns';
@@ -8,14 +9,14 @@ import { fr } from 'date-fns/locale';
 
 const Decisions: React.FC = () => {
   const { t } = useTranslation();
-  const [decisions, setDecisions] = useState<any[]>([]);
+  const [decisions, setDecisions] = useState<Decision[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchDecisions = async () => {
       try {
-        const response = await api.get('/decisions');
-        setDecisions(response.data);
+        const response = await api.get('/decisions', { params: { limit: 100 } });
+        setDecisions(response.data.data);
       } catch (error) {
         console.error('Error fetching decisions:', error);
       } finally {

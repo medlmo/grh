@@ -1,13 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
+import {
+  CreateAgentDto,
+  UpdateAgentDto,
+  CreateCarriereEventDto,
+  CreatePieceJointeDto,
+  AgentsQueryDto,
+} from './dto/agent.dto';
+import { Prisma, StatutAgent } from '@prisma/client';
 
 @Injectable()
 export class AgentsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params?: { search?: string; statut?: string; structureId?: number }) {
-    const where: any = {};
+  async findAll(params: AgentsQueryDto) {
+    const where: Prisma.AgentWhereInput = { deletedAt: null };
     if (params?.statut) where.statut = params.statut;
     if (params?.structureId) where.structureId = Number(params.structureId);
     if (params?.search) {
@@ -19,25 +26,31 @@ export class AgentsService {
       ];
     }
     // Vue liste : select minimal — évite de charger corps, cadre, echelle inutilement
-    return this.prisma.agent.findMany({
-      where,
-      select: {
-        id: true,
-        matricule: true,
-        nomFr: true,
-        prenomFr: true,
-        nomAr: true,
-        prenomAr: true,
-        sexe: true,
-        statut: true,
-        statutCarriere: true,
-        fonctionFr: true,
-        createdAt: true,
-        structure: { select: { id: true, libelleFr: true } },
-        grade: { select: { id: true, libelleFr: true } },
-      },
-      orderBy: { nomFr: 'asc' },
-    });
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.agent.findMany({
+        where,
+        select: {
+          id: true,
+          matricule: true,
+          nomFr: true,
+          prenomFr: true,
+          nomAr: true,
+          prenomAr: true,
+          sexe: true,
+          statut: true,
+          statutCarriere: true,
+          fonctionFr: true,
+          createdAt: true,
+          structure: { select: { id: true, libelleFr: true } },
+          grade: { select: { id: true, libelleFr: true } },
+        },
+        orderBy: { nomFr: 'asc' },
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+      }),
+      this.prisma.agent.count({ where }),
+    ]);
+    return this.paginate(data, total, params.page, params.limit);
   }
 
   async findOne(id: number) {
@@ -54,7 +67,7 @@ export class AgentsService {
         piecesJointes: true,
       },
     });
-    if (!agent) throw new NotFoundException('Agent introuvable.');
+    if (!agent || agent.deletedAt) throw new NotFoundException('Agent introuvable.');
     return agent;
   }
 
@@ -73,34 +86,55 @@ export class AgentsService {
 
   async update(id: number, dto: UpdateAgentDto) {
     await this.findOne(id);
+    const data: Prisma.AgentUncheckedUpdateInput = { ...dto };
+    if (dto.dateNaissance) data.dateNaissance = new Date(dto.dateNaissance);
+    if (dto.dateRecrutement) data.dateRecrutement = new Date(dto.dateRecrutement);
+    if (dto.dateTitularisation) data.dateTitularisation = new Date(dto.dateTitularisation);
+    if (dto.dateFinContrat) data.dateFinContrat = new Date(dto.dateFinContrat);
     return this.prisma.agent.update({
       where: { id },
-      data: {
-        ...dto,
-        dateNaissance: new Date(dto.dateNaissance),
-        dateRecrutement: new Date(dto.dateRecrutement),
-        dateTitularisation: dto.dateTitularisation ? new Date(dto.dateTitularisation) : null,
-        dateFinContrat: dto.dateFinContrat ? new Date(dto.dateFinContrat) : null,
-      },
+      data,
       include: { structure: true, grade: true, corps: true },
     });
   }
 
   async remove(id: number) {
     await this.findOne(id);
-    return this.prisma.agent.delete({ where: { id } });
+    return this.prisma.agent.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 
   // Historique de carrière
-  async addCarriereEvent(agentId: number, data: any) {
+  async addCarriereEvent(agentId: number, data: CreateCarriereEventDto) {
     return this.prisma.carriereHistorique.create({
-      data: { agentId, ...data, dateEffet: new Date(data.dateEffet) },
+      data: {
+        agentId,
+        dateEffet: new Date(data.dateEffet),
+        evenement: data.evenement,
+        descriptionFr: data.descriptionFr,
+        descriptionAr: data.descriptionAr,
+        gradeAvantId: data.gradeAvantId,
+        gradeApresId: data.gradeApresId,
+        echelonAvant: data.echelonAvant,
+        echelonApres: data.echelonApres,
+      },
     });
   }
 
   // Pièces jointes (métadonnées — le fichier est géré via upload)
-  async addPiece(agentId: number, data: any) {
-    return this.prisma.pieceJointe.create({ data: { agentId, ...data } });
+  async addPiece(agentId: number, data: CreatePieceJointeDto) {
+    return this.prisma.pieceJointe.create({
+      data: {
+        agentId,
+        type: data.type,
+        nomFichier: data.nomFichier,
+        chemin: data.chemin,
+        mimeType: data.mimeType,
+        taille: data.taille,
+      },
+    });
   }
 
   async removePiece(agentId: number, pieceId: number) {
@@ -113,5 +147,17 @@ export class AgentsService {
     const now = Date.now();
     const years = (now - agent.dateRecrutement.getTime()) / (365.25 * 24 * 3600 * 1000);
     return { annees: Math.floor(years), mois: Math.floor((years % 1) * 12) };
+  }
+
+  private paginate<T>(data: T[], total: number, page: number, limit: number) {
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

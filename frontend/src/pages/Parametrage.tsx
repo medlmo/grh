@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import { Collectivite } from '../types';
 import styles from './Parametrage.module.css';
 import { Building2, Layers, Briefcase, Calendar } from 'lucide-react';
 import FeriesTab from '../components/parametrage/FeriesTab';
@@ -10,7 +11,7 @@ import GrilleTab from '../components/parametrage/GrilleTab';
 const Parametrage: React.FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('collectivite');
-  const [collectivite, setCollectivite] = useState<any>(null);
+  const [collectivite, setCollectivite] = useState<Collectivite | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

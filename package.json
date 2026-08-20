@@ -1,0 +1,16 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "Application web de **Gestion des Ressources Humaines** destinée aux collectivités territoriales marocaines, développée pour le Conseil de la Région Souss-Massa.",
+  "main": "replace_agent_detail.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "helmet": "^8.3.0"
+  }
+}

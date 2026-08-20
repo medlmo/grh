@@ -116,7 +116,7 @@ Voir `backend/.env.example` pour la liste complète.
 | `JWT_ACCESS_EXPIRES` | Durée de vie du token d'accès (ex. `15m`) |
 | `JWT_REFRESH_EXPIRES` | Durée de vie du refresh token (ex. `7d`) |
 | `PORT` | Port d'écoute du backend (défaut : `4000`) |
-| `CORS_ORIGIN` | Origine autorisée par CORS |
+| `CORS_ORIGIN` | Liste stricte d’origines autorisées par CORS, séparées par des virgules (sans `*`) |
 
 ---
 

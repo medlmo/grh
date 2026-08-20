@@ -58,20 +58,20 @@ const Conges: React.FC = () => {
     try {
       if (activeTab === 'mes-conges') {
         const [congesRes, soldeRes, typesRes] = await Promise.all([
-          api.get('/conges', { params: { mine: 'true' } }),
+          api.get('/conges', { params: { mine: 'true', limit: 100 } }),
           user?.agentId ? api.get(`/conges/solde/${user.agentId}`) : Promise.resolve({ data: null }),
-          api.get('/conges/types'),
+          api.get('/conges/types', { params: { limit: 100 } }),
         ]);
-        setConges(congesRes.data);
+        setConges(congesRes.data.data);
         setSolde(soldeRes.data);
-        setTypes(typesRes.data);
+        setTypes(typesRes.data.data);
       } else if (activeTab === 'validation') {
         const [response, typesRes] = await Promise.all([
-          api.get('/conges/a-valider'),
-          api.get('/conges/types'),
+          api.get('/conges/a-valider', { params: { limit: 100 } }),
+          api.get('/conges/types', { params: { limit: 100 } }),
         ]);
-        setConges(response.data);
-        setTypes(typesRes.data);
+        setConges(response.data.data);
+        setTypes(typesRes.data.data);
       } else {
         // Pour éviter d'importer date-fns ici juste pour formater, on peut extraire le début et fin
         // Mais c'est plus simple de garder le formatage ici ou de le passer à l'API.
@@ -81,13 +81,13 @@ const Conges: React.FC = () => {
         const fin = `${dateFinMois.getFullYear()}-${String(dateFinMois.getMonth() + 1).padStart(2, '0')}-${String(dateFinMois.getDate()).padStart(2, '0')}`;
 
         const [response, typesRes] = await Promise.all([
-          api.get('/conges/calendrier', { params: { debut, fin } }),
-          api.get('/conges/types'),
+          api.get('/conges/calendrier', { params: { debut, fin, limit: 100 } }),
+          api.get('/conges/types', { params: { limit: 100 } }),
         ]);
-        setConges(response.data);
-        setTypes(typesRes.data);
+        setConges(response.data.data);
+        setTypes(typesRes.data.data);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setAlert({ message: t('conges.error_loading'), type: 'error' });
       console.error('Error fetching conges data:', error);
     } finally {
@@ -115,11 +115,17 @@ const Conges: React.FC = () => {
     setFormError(null);
     setFormSubmitting(true);
     try {
-      const payload: any = {
+      const payload: {
+        agentId?: number;
+        type: string;
+        dateDebut: string;
+        dateFin: string;
+        motif?: string;
+      } = {
+        ...(user?.agentId ? { agentId: user.agentId } : {}),
         type: form.type,
         dateDebut: form.dateDebut,
         dateFin: form.dateFin,
-        agentId: Number(user?.agentId),
       };
       if (form.motif) payload.motif = form.motif;
       const created = await api.post('/conges', payload);
@@ -132,14 +138,15 @@ const Conges: React.FC = () => {
       setIsModalOpen(false);
       setForm({ type: '', dateDebut: '', dateFin: '', motif: '' });
       fetchData();
-    } catch (error: any) {
-      setFormError(error.response?.data?.message || t('common.error'));
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setFormError(msg || t('common.error'));
     } finally {
       setFormSubmitting(false);
     }
   };
 
-  const handleAction = async (id: number, action: string, payload?: any) => {
+  const handleAction = async (id: number, action: string, payload?: Record<string, unknown>) => {
     try {
       await api.post(`/conges/${id}/${action}`, payload || {});
       const messages: Record<string, string> = {
@@ -153,8 +160,9 @@ const Conges: React.FC = () => {
       showAlert(messages[action] || t('common.success'));
       fetchData();
       refreshPendingCount();
-    } catch (error: any) {
-      showAlert(error.response?.data?.message || t('common.error'), 'error');
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      showAlert(msg || t('common.error'), 'error');
     }
   };
 

@@ -8,7 +8,7 @@ import {
   CreateCadreDto, UpdateCadreDto,
   CreateGradeDto, UpdateGradeDto,
   CreateEchelonDto, UpdateEchelonDto,
-  CreateJourFerieDto,
+  AnneeQueryDto, CreateJourFerieDto,
   UpdateCollectiviteDto,
   CreateStructureDto,
   UpdateStructureDto,
@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 @Controller('parametrage')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,11 +38,11 @@ export class ParametrageController {
   // ── Hiérarchie : Corps → Cadre → Grade → Échelon ───────────────────────────
 
   @Get('corps')
-  getCorps() { return this.param.getCorps(); }
+  getCorps(@Query() query: PaginationQueryDto) { return this.param.getCorps(query); }
 
   @Get('corps/:id/cadres')
-  getCorpsCadres(@Param('id', ParseIntPipe) id: number) {
-    return this.param.getCorpsCadres(id);
+  getCorpsCadres(@Param('id', ParseIntPipe) id: number, @Query() query: PaginationQueryDto) {
+    return this.param.getCorpsCadres(id, query);
   }
 
   @Post('corps')
@@ -61,8 +62,8 @@ export class ParametrageController {
   // ── Cadres ──────────────────────────────────────────────────────────────────
 
   @Get('cadres/:id/grades')
-  getCadreGrades(@Param('id', ParseIntPipe) id: number) {
-    return this.param.getCadreGrades(id);
+  getCadreGrades(@Param('id', ParseIntPipe) id: number, @Query() query: PaginationQueryDto) {
+    return this.param.getCadreGrades(id, query);
   }
 
   @Post('cadres')
@@ -82,8 +83,8 @@ export class ParametrageController {
   // ── Grades ──────────────────────────────────────────────────────────────────
 
   @Get('grades/:id/echelons')
-  getGradeEchelons(@Param('id', ParseIntPipe) id: number) {
-    return this.param.getGradeEchelons(id);
+  getGradeEchelons(@Param('id', ParseIntPipe) id: number, @Query() query: PaginationQueryDto) {
+    return this.param.getGradeEchelons(id, query);
   }
 
   @Post('grades')
@@ -119,8 +120,8 @@ export class ParametrageController {
   // ── Jours fériés ─────────────────────────────────────────────────────────────
 
   @Get('feries')
-  getJoursFeries(@Query('annee') annee?: string) {
-    return this.param.getJoursFeries(annee ? Number(annee) : undefined);
+  getJoursFeries(@Query() query: AnneeQueryDto) {
+    return this.param.getJoursFeries(query.annee, query);
   }
 
   @Post('feries')
@@ -134,10 +135,10 @@ export class ParametrageController {
   // ── Structures (organigramme) ────────────────────────────────────────────────
 
   @Get('structures')
-  getStructures() { return this.param.getStructures(); }
+  getStructures(@Query() query: PaginationQueryDto) { return this.param.getStructures(query); }
 
   @Get('structures/arbre')
-  getStructuresArbre() { return this.param.getStructuresArbre(); }
+  getStructuresArbre(@Query() query: PaginationQueryDto) { return this.param.getStructuresArbre(query); }
 
   @Post('structures')
   @Roles(Role.ADMIN, Role.DRH)

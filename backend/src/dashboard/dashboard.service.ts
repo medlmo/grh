@@ -32,11 +32,11 @@ export class DashboardService {
       parStructureRaw,
       evolutionMensuelle,
     ] = await Promise.all([
-      this.prisma.agent.count(),
-      this.prisma.agent.count({ where: { statutCarriere: StatutCarriere.EN_ACTIVITE } }),
-      this.prisma.agent.groupBy({ by: ['statut'],        _count: { _all: true } }),
-      this.prisma.agent.groupBy({ by: ['statutCarriere'], _count: { _all: true } }),
-      this.prisma.agent.groupBy({ by: ['sexe'],          _count: { _all: true } }),
+      this.prisma.agent.count({ where: { deletedAt: null } }),
+      this.prisma.agent.count({ where: { deletedAt: null, statutCarriere: StatutCarriere.EN_ACTIVITE } }),
+      this.prisma.agent.groupBy({ by: ['statut'],        where: { deletedAt: null }, _count: { _all: true } }),
+      this.prisma.agent.groupBy({ by: ['statutCarriere'], where: { deletedAt: null }, _count: { _all: true } }),
+      this.prisma.agent.groupBy({ by: ['sexe'],          where: { deletedAt: null }, _count: { _all: true } }),
       this.prisma.conge.count({
         where: { statut: { in: [StatutDemande.EN_ATTENTE_N1, StatutDemande.EN_ATTENTE_N2, StatutDemande.EN_ATTENTE_DRH] } },
       }),
@@ -62,6 +62,7 @@ export class DashboardService {
       // Agents proches de la retraite : 61-63 ans, EN_ACTIVITE
       this.prisma.agent.count({
         where: {
+          deletedAt: null,
           statutCarriere: StatutCarriere.EN_ACTIVITE,
           dateNaissance: { gte: retraite63, lte: retraite61 },
         },
@@ -70,6 +71,7 @@ export class DashboardService {
       this.getRetraitesProches(),
       this.prisma.agent.groupBy({
         by: ['structureId'],
+        where: { deletedAt: null },
         _count: { _all: true },
         orderBy: { _count: { structureId: 'desc' } },
         take: 8,
@@ -126,6 +128,7 @@ export class DashboardService {
         COUNT(*) FILTER (WHERE sexe = 'M')   AS hommes,
         COUNT(*) FILTER (WHERE sexe = 'F')   AS femmes
       FROM "Agent"
+      WHERE "deletedAt" IS NULL
       GROUP BY tranche
     `;
 
@@ -162,6 +165,7 @@ export class DashboardService {
     const now = new Date();
     const agents = await this.prisma.agent.findMany({
       where: {
+        deletedAt: null,
         statutCarriere: StatutCarriere.EN_ACTIVITE,
         // ≥ 58 ans → retraite dans ≤ 5 ans (à 63 ans)
         dateNaissance: { lte: new Date(now.getFullYear() - 58, now.getMonth(), now.getDate()) },

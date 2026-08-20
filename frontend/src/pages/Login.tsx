@@ -23,8 +23,9 @@ const Login: React.FC = () => {
     try {
       await login({ email, motDePasse: password });
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('common.error'));
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || t('common.error'));
     } finally {
       setIsLoading(false);
     }

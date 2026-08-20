@@ -217,8 +217,8 @@ const NodeModal: React.FC<NodeModalProps> = ({ modal, allNodes, onClose, onSave 
         });
       }
       onSave();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Une erreur est survenue.');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Une erreur est survenue.');
     } finally {
       setSaving(false);
     }
@@ -382,8 +382,8 @@ const DeleteConfirm: React.FC<DeleteConfirmProps> = ({ node, onClose, onConfirme
     try {
       await api.delete(`/parametrage/structures/${node.id}`);
       onConfirmed();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Suppression impossible.');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Suppression impossible.');
       setDeleting(false);
     }
   };
@@ -448,8 +448,8 @@ const OrganigrammeTab: React.FC = () => {
 
   const fetchTree = useCallback(async () => {
     try {
-      const { data } = await api.get<StructureNode[]>('/parametrage/structures/arbre');
-      setTree(data);
+      const { data } = await api.get<{ data: StructureNode[] }>('/parametrage/structures/arbre', { params: { limit: 100 } });
+      setTree(data.data);
       setError('');
     } catch {
       setError('Impossible de charger l\'organigramme.');

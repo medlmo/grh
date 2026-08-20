@@ -9,13 +9,31 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AgentsService } from './agents.service';
-import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
+import {
+  CreateAgentDto,
+  UpdateAgentDto,
+  CreateCarriereEventDto,
+  CreatePieceJointeDto,
+  AgentsQueryDto,
+} from './dto/agent.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { Role, StatutAgent } from '@prisma/client';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../common/types/authenticated-user';
+
+const PRIVILEGED_ROLES: Role[] = [
+  Role.ADMIN,
+  Role.DRH,
+  Role.CHEF_DIVISION,
+  Role.CHEF_SERVICE,
+  Role.DIRECTEUR_GENERAL,
+  Role.PRESIDENT,
+];
 
 @Controller('agents')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -24,20 +42,13 @@ export class AgentsController {
 
   @Get()
   @Roles(Role.ADMIN, Role.DRH, Role.DIRECTEUR_GENERAL)
-  findAll(
-    @Query('search') search?: string,
-    @Query('statut') statut?: string,
-    @Query('structureId') structureId?: string,
-  ) {
-    return this.agents.findAll({
-      search,
-      statut,
-      structureId: structureId ? Number(structureId) : undefined,
-    });
+  findAll(@Query() query: AgentsQueryDto) {
+    return this.agents.findAll(query);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthenticatedUser) {
+    this.assertCanAccessAgent(id, user);
     return this.agents.findOne(id);
   }
 
@@ -60,7 +71,8 @@ export class AgentsController {
   }
 
   @Get(':id/anciennete')
-  anciennete(@Param('id', ParseIntPipe) id: number) {
+  anciennete(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthenticatedUser) {
+    this.assertCanAccessAgent(id, user);
     return this.agents.anciennete(id);
   }
 
@@ -68,7 +80,7 @@ export class AgentsController {
   @Roles(Role.ADMIN, Role.DRH)
   addCarriereEvent(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: any,
+    @Body() data: CreateCarriereEventDto,
   ) {
     return this.agents.addCarriereEvent(id, data);
   }
@@ -77,7 +89,7 @@ export class AgentsController {
   @Roles(Role.ADMIN, Role.DRH)
   addPiece(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: any,
+    @Body() data: CreatePieceJointeDto,
   ) {
     return this.agents.addPiece(id, data);
   }
@@ -89,5 +101,11 @@ export class AgentsController {
     @Param('pieceId', ParseIntPipe) pieceId: number,
   ) {
     return this.agents.removePiece(id, pieceId);
+  }
+
+  private assertCanAccessAgent(id: number, user: AuthenticatedUser): void {
+    if (PRIVILEGED_ROLES.includes(user.role)) return;
+    if (user.role === Role.AGENT && user.agentId === id) return;
+    throw new ForbiddenException("Vous n'êtes pas autorisé à consulter ce dossier.");
   }
 }

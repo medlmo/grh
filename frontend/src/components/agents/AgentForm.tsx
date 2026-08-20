@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import api from '../../api/client';
 import { STATUT_STYLES } from '../../utils/agentHelpers';
+import { Structure, Corps, Cadre, Grade, Echelon, Diplome } from '../../types';
 import styles from './AgentForm.module.css';
 
 const AgentForm: React.FC = () => {
@@ -75,28 +76,28 @@ const AgentForm: React.FC = () => {
     fonctionAr: '',
   });
 
-  const [structures, setStructures] = useState<any[]>([]);
+  const [structures, setStructures] = useState<Structure[]>([]);
   const [structureSearch, setStructureSearch] = useState('');
-  const [corps, setCorps] = useState<any[]>([]);
-  const [cadres, setCadres] = useState<any[]>([]);
-  const [grades, setGrades] = useState<any[]>([]);
-  const [echelons, setEchelons] = useState<any[]>([]);
+  const [corps, setCorps] = useState<Corps[]>([]);
+  const [cadres, setCadres] = useState<Cadre[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [echelons, setEchelons] = useState<Echelon[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Diplômes (modifiables)
-  const [diplomes, setDiplomes] = useState<any[]>([]);
+  const [diplomes, setDiplomes] = useState<Diplome[]>([]);
 
   useEffect(() => {
     Promise.all([
-      api.get('/parametrage/structures'),
-      api.get('/parametrage/corps'),
+      api.get('/parametrage/structures', { params: { limit: 100 } }),
+      api.get('/parametrage/corps', { params: { limit: 100 } }),
     ])
       .then(([resStr, resCorps]) => {
-        setStructures(resStr.data);
-        setCorps(resCorps.data);
+        setStructures(resStr.data.data);
+        setCorps(resCorps.data.data);
       })
       .catch(console.error);
 
@@ -164,8 +165,8 @@ const AgentForm: React.FC = () => {
 
   const loadCadres = async (corpsId: number) => {
     try {
-      const res = await api.get(`/parametrage/corps/${corpsId}/cadres`);
-      setCadres(res.data);
+      const res = await api.get(`/parametrage/corps/${corpsId}/cadres`, { params: { limit: 100 } });
+      setCadres(res.data.data);
     } catch {
       setCadres([]);
     }
@@ -173,8 +174,8 @@ const AgentForm: React.FC = () => {
 
   const loadGrades = async (cadreId: number) => {
     try {
-      const res = await api.get(`/parametrage/cadres/${cadreId}/grades`);
-      setGrades(res.data);
+      const res = await api.get(`/parametrage/cadres/${cadreId}/grades`, { params: { limit: 100 } });
+      setGrades(res.data.data);
     } catch {
       setGrades([]);
     }
@@ -182,8 +183,8 @@ const AgentForm: React.FC = () => {
 
   const loadEchelons = async (gradeId: number) => {
     try {
-      const res = await api.get(`/parametrage/grades/${gradeId}/echelons`);
-      setEchelons(res.data);
+      const res = await api.get(`/parametrage/grades/${gradeId}/echelons`, { params: { limit: 100 } });
+      setEchelons(res.data.data);
     } catch {
       setEchelons([]);
     }
@@ -264,8 +265,8 @@ const AgentForm: React.FC = () => {
     setError('');
 
     // Only send fields accepted by the backend DTO
-    const payload: Record<string, any> = {};
-    const fields = [
+    const payload: Record<string, string | number> = {};
+    const fields: Array<keyof typeof formData> = [
       'matricule', 'cin', 'nomFr', 'nomAr', 'prenomFr', 'prenomAr',
       'dateNaissance', 'lieuNaissanceFr', 'sexe', 'nationalite',
       'situationFamiliale', 'telephone', 'email',
@@ -273,7 +274,7 @@ const AgentForm: React.FC = () => {
       'caisseRetraite', 'matriculeRetraite', 'fonctionFr', 'fonctionAr',
     ];
     fields.forEach((f) => {
-      const val = (formData as any)[f];
+      const val = formData[f];
       // Convert empty date strings to undefined
       if (f.startsWith('date') && val === '') return;
       if (val !== undefined && val !== '') payload[f] = val;
@@ -295,8 +296,9 @@ const AgentForm: React.FC = () => {
         await api.post('/agents', payload);
       }
       navigate('/agents');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la sauvegarde.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || 'Erreur lors de la sauvegarde.');
     } finally {
       setIsSubmitting(false);
     }
@@ -313,7 +315,7 @@ const AgentForm: React.FC = () => {
   };
 
   const addDiplome = () => {
-    setDiplomes([...diplomes, { intituleFr: '', intituleAr: '', etablissement: '', anneeObtention: '' }]);
+    setDiplomes([...diplomes, { id: 0, intituleFr: '', intituleAr: '', etablissement: '', anneeObtention: '' }]);
   };
 
   const removeDiplome = (index: number) => {
@@ -931,7 +933,7 @@ const AgentForm: React.FC = () => {
                             type="text"
                             className="form-input"
                             placeholder=" "
-                            value={dip.intituleAr}
+                            value={dip.intituleAr ?? ''}
                             onChange={(e) => updateDiplome(index, 'intituleAr', e.target.value)}
                           />
                           <label>Intitulé (Ar)</label>
@@ -941,7 +943,7 @@ const AgentForm: React.FC = () => {
                             type="text"
                             className="form-input"
                             placeholder=" "
-                            value={dip.etablissement}
+                            value={dip.etablissement ?? ''}
                             onChange={(e) => updateDiplome(index, 'etablissement', e.target.value)}
                           />
                           <label>Établissement</label>
@@ -951,7 +953,7 @@ const AgentForm: React.FC = () => {
                             type="number"
                             className="form-input"
                             placeholder=" "
-                            value={dip.anneeObtention}
+                            value={dip.anneeObtention ?? ''}
                             onChange={(e) => updateDiplome(index, 'anneeObtention', e.target.value)}
                           />
                           <label>Année d'obtention</label>
