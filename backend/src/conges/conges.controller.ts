@@ -49,13 +49,13 @@ export class CongesController {
   }
 
   @Get('a-valider')
-  findAValider(@CurrentUser('role') role: Role, @Query() query: PaginationQueryDto) {
-    return this.conges.findAValider(role, query);
+  findAValider(@CurrentUser() user: CongesUser, @Query() query: PaginationQueryDto) {
+    return this.conges.findAValider(user, query);
   }
 
   @Get('a-valider/count')
-  countAValider(@CurrentUser('role') role: Role) {
-    return this.conges.countAValider(role);
+  countAValider(@CurrentUser() user: CongesUser) {
+    return this.conges.countAValider(user);
   }
 
   @Get('calendrier')
@@ -70,8 +70,8 @@ export class CongesController {
   }
 
   @Get('solde/:agentId')
-  getSolde(@Param('agentId', ParseIntPipe) agentId: number, @CurrentUser() user: CongesUser) {
-    this.conges.assertCanAccessAgent(agentId, user);
+  async getSolde(@Param('agentId', ParseIntPipe) agentId: number, @CurrentUser() user: CongesUser) {
+    await this.conges.assertCanAccessAgent(agentId, user);
     return this.conges.getSolde(agentId);
   }
 
@@ -105,10 +105,10 @@ export class CongesController {
   @Roles(Role.CHEF_DIVISION, Role.CHEF_SERVICE)
   validerN1(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @CurrentUser() user: CongesUser,
     @Body() dto: ValiderCongeDto,
   ) {
-    return this.conges.validerN1(id, userId, dto.commentaire);
+    return this.conges.validerN1(id, user, dto.commentaire);
   }
 
   /** N2 : Directeur Général (validation finale). Le DRH peut également finaliser. */
@@ -116,10 +116,10 @@ export class CongesController {
   @Roles(Role.DIRECTEUR_GENERAL, Role.DRH, Role.PRESIDENT)
   validerN2(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @CurrentUser() user: CongesUser,
     @Body() dto: ValiderCongeDto,
   ) {
-    return this.conges.validerN2(id, userId, dto.commentaire);
+    return this.conges.validerN2(id, user, dto.commentaire);
   }
 
   /** DRH : relecture RH optionnelle avant validation finale. */
@@ -127,21 +127,21 @@ export class CongesController {
   @Roles(Role.DRH, Role.DIRECTEUR_GENERAL, Role.PRESIDENT)
   validerDrh(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @CurrentUser() user: CongesUser,
     @Body() dto: ValiderCongeDto,
   ) {
-    return this.conges.validerDrh(id, userId, dto.commentaire);
+    return this.conges.validerDrh(id, user, dto.commentaire);
   }
 
   @Post(':id/refuser')
   @Roles(Role.CHEF_DIVISION, Role.CHEF_SERVICE, Role.DRH, Role.DIRECTEUR_GENERAL, Role.PRESIDENT)
   refuser(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser('id') userId: number,
+    @CurrentUser() user: CongesUser,
     @Body() dto: RefuserCongeDto,
   ) {
     if (!dto.motifRefus) throw new BadRequestException('Motif de refus requis.');
-    return this.conges.refuser(id, userId, dto.motifRefus);
+    return this.conges.refuser(id, user, dto.motifRefus);
   }
 
   @Post(':id/annuler')
