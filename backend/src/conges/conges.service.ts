@@ -8,6 +8,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCongeDto } from './dto/conge.dto';
@@ -25,12 +26,10 @@ export interface CongesUser {
   role: Role | string;
 }
 
-/** Rôles autorisés à consulter ou annuler les congés de n'importe quel agent. */
-const PRIVILEGED_ROLES: string[] = [
+/** Rôles dont le périmètre congés est global. */
+const GLOBAL_CONGE_ROLES: string[] = [
   Role.ADMIN,
   Role.DRH,
-  Role.CHEF_DIVISION,
-  Role.CHEF_SERVICE,
   Role.DIRECTEUR_GENERAL,
   Role.PRESIDENT,
 ];
@@ -65,11 +64,15 @@ export class CongesService {
 
   async findAll(user: CongesUser, params: CongeFilters) {
     const where: Prisma.CongeWhereInput = {};
+    let scopedStructureIds: number[] | undefined;
 
     // mine=true → toujours filtrer sur l'agent connecté (onglet "Mes Congés" pour tous rôles)
     if (params.mine) {
       where.agentId = user.agentId ?? -1; // -1 retourne vide si pas de profil agent
-    } else if (!PRIVILEGED_ROLES.includes(user.role)) {
+    } else if ((N1_ROLES as readonly string[]).includes(user.role)) {
+      scopedStructureIds = await this.getN1StructureScope(user);
+      if (params.agentId) where.agentId = Number(params.agentId);
+    } else if (!GLOBAL_CONGE_ROLES.includes(user.role)) {
       // Un agent non-privilégié ne voit que ses propres congés, quel que soit le filtre agentId passé.
       this.requireAgentId(user);
       where.agentId = user.agentId as number;
@@ -79,7 +82,15 @@ export class CongesService {
 
     if (params.statut) where.statut = params.statut;
     if (params.type) where.type = params.type;
-    if (params.structureId) where.agent = { structureId: Number(params.structureId) };
+    if (scopedStructureIds) {
+      where.agent = params.structureId && scopedStructureIds.includes(Number(params.structureId))
+        ? { structureId: Number(params.structureId), deletedAt: null }
+        : params.structureId
+          ? { structureId: { in: [] } }
+          : { structureId: { in: scopedStructureIds }, deletedAt: null };
+    } else if (params.structureId) {
+      where.agent = { structureId: Number(params.structureId) };
+    }
     if (params.debut && params.fin) {
       where.AND = [
         { dateDebut: { lte: params.fin } },
@@ -114,11 +125,11 @@ export class CongesService {
     return this.paginate(data, total, params.page, params.limit);
   }
 
-  async findAValider(role: Role, params: PaginationQueryDto) {
-    const statuts = this.statutsPourRole(role);
+  async findAValider(user: CongesUser, params: PaginationQueryDto) {
+    const statuts = this.statutsPourRole(user.role as Role);
     if (statuts.length === 0) return this.paginate([], 0, params.page, params.limit);
 
-    const where: Prisma.CongeWhereInput = { statut: { in: statuts } };
+    const where = await this.buildValidationWhere(user, statuts);
     const [data, total] = await this.prisma.$transaction([
       this.prisma.conge.findMany({
         where,
@@ -146,10 +157,12 @@ export class CongesService {
     return this.paginate(data, total, params.page, params.limit);
   }
 
-  async countAValider(role: Role) {
-    const statuts = this.statutsPourRole(role);
+  async countAValider(user: CongesUser) {
+    const statuts = this.statutsPourRole(user.role as Role);
     if (statuts.length === 0) return 0;
-    return this.prisma.conge.count({ where: { statut: { in: statuts } } });
+    return this.prisma.conge.count({
+      where: await this.buildValidationWhere(user, statuts),
+    });
   }
 
   async findOne(id: number, user?: CongesUser) {
@@ -163,11 +176,14 @@ export class CongesService {
     });
     if (!conge) throw new NotFoundException('Demande de congé introuvable.');
 
-    // Vérification d'appartenance : un agent simple ne peut voir que ses propres congés.
-    if (user && !PRIVILEGED_ROLES.includes(user.role)) {
-      this.requireAgentId(user);
-      if (conge.agentId !== user.agentId) {
-        throw new ForbiddenException("Vous n'êtes pas autorisé à consulter cette demande.");
+    if (user && !GLOBAL_CONGE_ROLES.includes(user.role)) {
+      if ((N1_ROLES as readonly string[]).includes(user.role)) {
+        await this.assertStructureInN1Scope(user, conge.agent.structureId);
+      } else {
+        this.requireAgentId(user);
+        if (conge.agentId !== user.agentId) {
+          throw new ForbiddenException("Vous n'êtes pas autorisé à consulter cette demande.");
+        }
       }
     }
 
@@ -188,7 +204,15 @@ export class CongesService {
       statut: { in: [StatutDemande.APPROUVEE] },
       AND: [{ dateDebut: { lte: fin } }, { dateFin: { gte: debut } }],
     };
-    if (!PRIVILEGED_ROLES.includes(user.role)) {
+    if ((N1_ROLES as readonly string[]).includes(user.role)) {
+      const scope = await this.getN1StructureScope(user);
+      where.agent = params?.structureId && scope.includes(Number(params.structureId))
+        ? { structureId: Number(params.structureId), deletedAt: null }
+        : params?.structureId
+          ? { structureId: { in: [] } }
+          : { structureId: { in: scope }, deletedAt: null };
+      if (params?.type) where.type = params.type;
+    } else if (!GLOBAL_CONGE_ROLES.includes(user.role)) {
       this.requireAgentId(user);
       where.agentId = user.agentId;
     } else {
@@ -280,16 +304,18 @@ export class CongesService {
 
     await this.metier.verifierChevauchement(agentId, dateDebut, dateFin);
 
-    return this.prisma.conge.create({
-      data: {
-        agentId, type: dto.type, dateDebut, dateFin,
-        nombreJours, motif: dto.motif,
-        adresseCongeFr: dto.adresseCongeFr, adresseCongeAr: dto.adresseCongeAr,
-        justificatifUrl: dto.justificatifUrl,
-        statut: StatutDemande.BROUILLON, demandeurId: agentId,
-      },
-      include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
-    });
+    return this.prisma.$transaction((tx) =>
+      tx.conge.create({
+        data: {
+          agentId, type: dto.type, dateDebut, dateFin,
+          nombreJours, motif: dto.motif,
+          adresseCongeFr: dto.adresseCongeFr, adresseCongeAr: dto.adresseCongeAr,
+          justificatifUrl: dto.justificatifUrl,
+          statut: StatutDemande.BROUILLON, demandeurId: agentId,
+        },
+        include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+      }),
+    );
   }
 
   // ============================================================
@@ -301,73 +327,107 @@ export class CongesService {
     this.assertOwnConge(conge.agentId, user, 'soumettre');
     this.metier.guardStatut(conge.statut, [StatutDemande.BROUILLON], 'Seul un brouillon peut être soumis.');
 
-    return this.prisma.conge.update({
-      where: { id },
-      data: { statut: StatutDemande.EN_ATTENTE_N1, dateSoumission: new Date() },
-      include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+    return this.prisma.$transaction(async (tx) => {
+      const transition = await tx.conge.updateMany({
+        where: { id, statut: StatutDemande.BROUILLON },
+        data: { statut: StatutDemande.EN_ATTENTE_N1, dateSoumission: new Date() },
+      });
+      this.assertTransitionApplied(transition.count);
+      return tx.conge.findUniqueOrThrow({
+        where: { id },
+        include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+      });
     });
   }
 
-  async validerN1(id: number, userId: number, commentaire?: string) {
+  async validerN1(id: number, user: CongesUser, commentaire?: string) {
     const conge = await this.findOne(id);
     this.metier.guardStatut(
       conge.statut, [StatutDemande.EN_ATTENTE_N1],
       "Cette demande n'est pas en attente de validation N1.",
     );
+    await this.assertCanValidate(user, conge.agent.structureId, 'N1');
 
-    return this.prisma.conge.update({
-      where: { id },
-      data: { statut: StatutDemande.EN_ATTENTE_N2, valideN1Par: userId, valideN1Le: new Date(), commentaire },
-      include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+    return this.prisma.$transaction(async (tx) => {
+      const transition = await tx.conge.updateMany({
+        where: { id, statut: StatutDemande.EN_ATTENTE_N1 },
+        data: { statut: StatutDemande.EN_ATTENTE_N2, valideN1Par: user.id, valideN1Le: new Date(), commentaire },
+      });
+      this.assertTransitionApplied(transition.count);
+      return tx.conge.findUniqueOrThrow({
+        where: { id },
+        include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+      });
     });
   }
 
-  async validerN2(id: number, userId: number, commentaire?: string) {
+  async validerN2(id: number, user: CongesUser, commentaire?: string) {
     const conge = await this.findOne(id);
     this.metier.guardStatut(
       conge.statut, [StatutDemande.EN_ATTENTE_N2],
       "Cette demande n'est pas en attente de validation N2.",
     );
+    await this.assertCanValidate(user, conge.agent.structureId, 'N2');
 
     return this.prisma.$transaction(async (tx) => {
+      const transition = await tx.conge.updateMany({
+        where: { id, statut: StatutDemande.EN_ATTENTE_N2 },
+        data: { statut: StatutDemande.APPROUVEE, valideN2Par: user.id, valideN2Le: new Date(), commentaire },
+      });
+      this.assertTransitionApplied(transition.count);
       await this.solde.decompterSolde(tx, conge.agentId, conge.type, conge.nombreJours);
-      return tx.conge.update({
+      return tx.conge.findUniqueOrThrow({
         where: { id },
-        data: { statut: StatutDemande.APPROUVEE, valideN2Par: userId, valideN2Le: new Date(), commentaire },
         include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
       });
     });
   }
 
-  async validerDrh(id: number, userId: number, commentaire?: string) {
+  async validerDrh(id: number, user: CongesUser, commentaire?: string) {
     const conge = await this.findOne(id);
     this.metier.guardStatut(
       conge.statut, [StatutDemande.EN_ATTENTE_DRH],
       "Cette demande n'est pas en attente DRH.",
     );
+    await this.assertCanValidate(user, conge.agent.structureId, 'N2');
 
     return this.prisma.$transaction(async (tx) => {
+      const transition = await tx.conge.updateMany({
+        where: { id, statut: StatutDemande.EN_ATTENTE_DRH },
+        data: { statut: StatutDemande.APPROUVEE, valideDrhPar: user.id, valideDrhLe: new Date(), commentaire },
+      });
+      this.assertTransitionApplied(transition.count);
       await this.solde.decompterSolde(tx, conge.agentId, conge.type, conge.nombreJours);
-      return tx.conge.update({
+      return tx.conge.findUniqueOrThrow({
         where: { id },
-        data: { statut: StatutDemande.APPROUVEE, valideDrhPar: userId, valideDrhLe: new Date(), commentaire },
         include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
       });
     });
   }
 
-  async refuser(id: number, userId: number, motifRefus: string) {
+  async refuser(id: number, user: CongesUser, motifRefus: string) {
     const conge = await this.findOne(id);
     this.metier.guardStatut(
       conge.statut,
       [StatutDemande.EN_ATTENTE_N1, StatutDemande.EN_ATTENTE_N2, StatutDemande.EN_ATTENTE_DRH],
       'Cette demande ne peut plus être refusée.',
     );
+    await this.assertCanValidate(
+      user,
+      conge.agent.structureId,
+      conge.statut === StatutDemande.EN_ATTENTE_N1 ? 'N1' : 'N2',
+    );
 
-    return this.prisma.conge.update({
-      where: { id },
-      data: { statut: StatutDemande.REFUSEE, refusePar: userId, refuseLe: new Date(), motifRefus },
-      include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+    return this.prisma.$transaction(async (tx) => {
+      const transition = await tx.conge.updateMany({
+        where: { id, statut: conge.statut },
+        data: { statut: StatutDemande.REFUSEE, refusePar: user.id, refuseLe: new Date(), motifRefus },
+      });
+      this.assertTransitionApplied(transition.count);
+      return tx.conge.findUniqueOrThrow({
+        where: { id },
+        include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+      });
     });
   }
 
@@ -384,19 +444,29 @@ export class CongesService {
     // Si approuvée → restituer le solde dans une transaction
     if (conge.statut === StatutDemande.APPROUVEE) {
       return this.prisma.$transaction(async (tx) => {
-        await this.solde.restituerSolde(tx, conge.agentId, conge.type, conge.nombreJours);
-        return tx.conge.update({
-          where: { id },
+        const transition = await tx.conge.updateMany({
+          where: { id, statut: StatutDemande.APPROUVEE },
           data: { statut: StatutDemande.ANNULEE },
+        });
+        this.assertTransitionApplied(transition.count);
+        await this.solde.restituerSolde(tx, conge.agentId, conge.type, conge.nombreJours);
+        return tx.conge.findUniqueOrThrow({
+          where: { id },
           include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
         });
       });
     }
 
-    return this.prisma.conge.update({
-      where: { id },
-      data: { statut: StatutDemande.ANNULEE },
-      include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+    return this.prisma.$transaction(async (tx) => {
+      const transition = await tx.conge.updateMany({
+        where: { id, statut: conge.statut },
+        data: { statut: StatutDemande.ANNULEE },
+      });
+      this.assertTransitionApplied(transition.count);
+      return tx.conge.findUniqueOrThrow({
+        where: { id },
+        include: { agent: { select: { id: true, nomFr: true, prenomFr: true } } },
+      });
     });
   }
 
@@ -408,8 +478,17 @@ export class CongesService {
     return this.solde.getSolde(agentId);
   }
 
-  assertCanAccessAgent(agentId: number, user: CongesUser): void {
-    if (PRIVILEGED_ROLES.includes(user.role)) return;
+  async assertCanAccessAgent(agentId: number, user: CongesUser): Promise<void> {
+    if (GLOBAL_CONGE_ROLES.includes(user.role)) return;
+    if ((N1_ROLES as readonly string[]).includes(user.role)) {
+      const agent = await this.prisma.agent.findFirst({
+        where: { id: agentId, deletedAt: null },
+        select: { structureId: true },
+      });
+      if (!agent) throw new NotFoundException('Agent introuvable.');
+      await this.assertStructureInN1Scope(user, agent.structureId);
+      return;
+    }
     this.requireAgentId(user);
     if (user.agentId !== agentId) {
       throw new ForbiddenException("Vous n'êtes pas autorisé à consulter ce solde.");
@@ -428,6 +507,105 @@ export class CongesService {
     if ((N1_ROLES as readonly string[]).includes(role)) return [StatutDemande.EN_ATTENTE_N1];
     if ((N2_ROLES as readonly string[]).includes(role)) return [StatutDemande.EN_ATTENTE_N2, StatutDemande.EN_ATTENTE_DRH];
     return [];
+  }
+
+  private async buildValidationWhere(
+    user: CongesUser,
+    statuts: StatutDemande[],
+  ): Promise<Prisma.CongeWhereInput> {
+    const where: Prisma.CongeWhereInput = { statut: { in: statuts } };
+    if ((N1_ROLES as readonly string[]).includes(user.role)) {
+      where.agent = {
+        structureId: { in: await this.getN1StructureScope(user) },
+        deletedAt: null,
+      };
+    }
+    return where;
+  }
+
+  private async assertCanValidate(
+    user: CongesUser,
+    targetStructureId: number | null,
+    niveau: 'N1' | 'N2',
+  ): Promise<void> {
+    const role = user.role as Role;
+    if (niveau === 'N2') {
+      if (!(N2_ROLES as readonly Role[]).includes(role)) {
+        throw new ForbiddenException("Vous n'êtes pas autorisé à valider cette étape.");
+      }
+      return;
+    }
+
+    if (!(N1_ROLES as readonly Role[]).includes(role)) {
+      throw new ForbiddenException("Vous n'êtes pas autorisé à valider cette étape.");
+    }
+    if (targetStructureId == null) {
+      throw new ForbiddenException(
+        "La demande n'est rattachée à aucune structure validable.",
+      );
+    }
+
+    await this.assertStructureInN1Scope(user, targetStructureId);
+  }
+
+  private async assertStructureInN1Scope(
+    user: CongesUser,
+    targetStructureId: number | null,
+  ): Promise<void> {
+    if (targetStructureId == null) {
+      throw new ForbiddenException(
+        "La demande n'est rattachée à aucune structure validable.",
+      );
+    }
+    const allowedStructureIds = await this.getN1StructureScope(user);
+    if (!allowedStructureIds.includes(targetStructureId)) {
+      throw new ForbiddenException(
+        "Cette demande ne relève pas de votre périmètre organisationnel.",
+      );
+    }
+  }
+
+  private async getN1StructureScope(user: CongesUser): Promise<number[]> {
+    this.requireAgentId(user);
+    const validator = await this.prisma.agent.findFirst({
+      where: { id: user.agentId, deletedAt: null },
+      select: { structureId: true },
+    });
+    if (validator?.structureId == null) {
+      throw new ForbiddenException(
+        "Aucune structure n'est associée à votre compte. Accès refusé.",
+      );
+    }
+
+    if (user.role === Role.CHEF_SERVICE) return [validator.structureId];
+
+    const structures = await this.prisma.structure.findMany({
+      select: { id: true, parentId: true },
+    });
+    const scope = new Set<number>([validator.structureId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const structure of structures) {
+        if (
+          structure.parentId != null &&
+          scope.has(structure.parentId) &&
+          !scope.has(structure.id)
+        ) {
+          scope.add(structure.id);
+          changed = true;
+        }
+      }
+    }
+    return [...scope];
+  }
+
+  private assertTransitionApplied(count: number): void {
+    if (count !== 1) {
+      throw new ConflictException(
+        "Cette demande a déjà été traitée par un autre utilisateur.",
+      );
+    }
   }
 
   /**
