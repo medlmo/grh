@@ -2,13 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDecisionDto, DecisionsQueryDto } from './dto/decision.dto';
 import { Prisma } from '@prisma/client';
+import { AuthenticatedUser } from '../common/types/authenticated-user';
+import { StructureScopeService } from '../common/services/structure-scope.service';
 
 @Injectable()
 export class DecisionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly structureScope: StructureScopeService,
+  ) {}
 
-  async findAll(params: DecisionsQueryDto) {
-    const where: Prisma.DecisionAdminWhereInput = {};
+  async findAll(params: DecisionsQueryDto, user: AuthenticatedUser) {
+    const where: Prisma.DecisionAdminWhereInput = {
+      agent: await this.structureScope.getAgentWhere(user),
+    };
     if (params?.type) where.type = params.type;
     if (params?.agentId) where.agentId = Number(params.agentId);
     const [data, total] = await this.prisma.$transaction([
@@ -27,9 +34,11 @@ export class DecisionsService {
     };
   }
 
-  async findOne(id: number) {
-    const decision = await this.prisma.decisionAdmin.findUnique({
-      where: { id },
+  async findOne(id: number, user?: AuthenticatedUser) {
+    const decision = await this.prisma.decisionAdmin.findFirst({
+      where: user
+        ? { id, agent: await this.structureScope.getAgentWhere(user) }
+        : { id },
       include: { agent: true },
     });
     if (!decision) throw new NotFoundException('Décision introuvable.');

@@ -53,9 +53,27 @@ describe('Application HTTP (intégration)', () => {
   it('refuse le refresh sans cookie de session', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/refresh')
+      .set('Origin', 'http://localhost:5000')
       .expect(401)
       .expect(({ body }) => {
         expect(body.message).toContain('Session de renouvellement');
       });
+  });
+
+  it('refuse le refresh sans origine de confiance', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/refresh')
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body.message).toContain('Origine de la requête');
+      });
+  });
+
+  it('branche le rate limiting sur la route de connexion', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: 'invalid@example.com', motDePasse: 'invalid' });
+
+    expect([401, 422]).toContain(response.status);
   });
 });

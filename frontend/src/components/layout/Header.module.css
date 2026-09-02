@@ -100,3 +100,38 @@
   color: var(--primary-700, #1e3a5f);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
+
+@media (max-width: 1023px) {
+  .header,
+  .header.sidebar-collapsed,
+  :global([dir="ltr"]) .header,
+  :global([dir="ltr"]) .header.sidebar-collapsed,
+  :global([dir="rtl"]) .header,
+  :global([dir="rtl"]) .header.sidebar-collapsed {
+    right: 0;
+    left: 0;
+    padding: 0 12px;
+  }
+
+  .headerLeft {
+    gap: 8px;
+  }
+
+  .headerRight {
+    gap: 4px;
+  }
+
+  .langBtn {
+    padding: 5px 9px;
+  }
+}
+
+@media (max-width: 380px) {
+  .header {
+    padding-inline: 8px;
+  }
+
+  .headerRight {
+    gap: 1px;
+  }
+}

@@ -16,6 +16,7 @@ describe("CongesService — isolation des demandes", () => {
       },
       $transaction: jest.fn(),
     };
+    prisma.$transaction.mockImplementation((callback: (tx: typeof prisma) => unknown) => callback(prisma));
     const metier = {
       stripTime: jest.fn((date: Date) => date),
       getTypeConfig: jest.fn().mockResolvedValue(null),

@@ -164,7 +164,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* ── Section 1 : 6 indicateurs clés ─────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className={`${styles.kpiGrid} grid grid-cols-2 md:grid-cols-4 gap-4 mb-6`}>
         <KpiCard
           value={stats.totalAgents}
           label="Total agents"

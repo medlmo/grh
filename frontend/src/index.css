@@ -1300,7 +1300,20 @@ input, select, textarea {
 /* ============================================================
    Responsive
    ============================================================ */
+@media (max-width: 1023px) {
+  .app-main,
+  .app-main.sidebar-collapsed {
+    width: 100%;
+    min-width: 0;
+    margin-inline-start: 0;
+  }
+}
+
 @media (max-width: 1024px) {
+  .app-content {
+    padding: 20px;
+  }
+
   .detail-grid {
     grid-template-columns: 1fr;
   }
@@ -1312,45 +1325,198 @@ input, select, textarea {
   .charts-grid {
     grid-template-columns: 1fr;
   }
+
+  .settings-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .settings-nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
   }
 
-  [dir="rtl"] .sidebar {
-    transform: translateX(100%);
-  }
-
-  .sidebar.mobile-open {
-    transform: translateX(0);
-  }
-
-  .app-main {
-    margin-inline-start: 0;
-  }
-
-  .header {
-    left: 0 !important;
-    right: 0 !important;
+  .app-layout {
+    width: 100%;
+    min-width: 0;
   }
 
   .app-content {
+    width: 100%;
+    min-width: 0;
+    padding: 16px 12px 24px;
+    overflow-x: hidden;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 21px;
+    line-height: 1.25;
+  }
+
+  .page-actions {
+    width: 100%;
+  }
+
+  .page-actions > .btn,
+  .page-actions > a {
+    width: 100%;
+  }
+
+  .card {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .card-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
     padding: 16px;
+  }
+
+  .card-body {
+    min-width: 0;
+    padding: 16px;
+  }
+
+  .card-footer {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+
+  .filters-bar {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .search-input {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .filter-select {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .table-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 680px;
+  }
+
+  .data-table th,
+  .data-table td {
+    white-space: nowrap;
+  }
+
+  .tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding: 11px 14px;
   }
 
   .stats-grid {
     grid-template-columns: 1fr;
   }
 
+  .charts-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .form-row {
     grid-template-columns: 1fr;
   }
 
-  .login-card {
-    padding: 32px 24px;
-    margin: 16px;
+  .form-section {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 8px;
+  }
+
+  .modal {
+    max-height: calc(100dvh - 16px);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .modal-header,
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-header {
+    padding-bottom: 0;
+  }
+
+  .modal-footer {
+    padding: 0 16px 16px;
+    flex-wrap: wrap;
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 140px;
+  }
+
+  .toast-container {
+    inset-inline: 12px;
+    top: 12px;
+  }
+
+  .toast {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .calendar-header {
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .settings-grid {
+    gap: 14px;
+  }
+
+  .settings-nav {
+    margin-inline: -12px;
+    padding-inline: 12px;
   }
 
   .workflow-steps {
@@ -1360,6 +1526,38 @@ input, select, textarea {
 
   .workflow-steps::before {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-content {
+    padding-inline: 10px;
+  }
+
+  .card-header,
+  .card-body {
+    padding: 14px;
+  }
+
+  .btn {
+    padding-inline: 14px;
+  }
+
+  .stat-card {
+    padding: 18px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    flex-basis: auto;
   }
 }
 /* ============================================================

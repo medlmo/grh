@@ -111,9 +111,9 @@ export class CongesController {
     return this.conges.validerN1(id, user, dto.commentaire);
   }
 
-  /** N2 : Directeur Général (validation finale). Le DRH peut également finaliser. */
+  /** N2 : Directeur Général et Président (validation finale). */
   @Post(':id/valider-n2')
-  @Roles(Role.DIRECTEUR_GENERAL, Role.DRH, Role.PRESIDENT)
+  @Roles(Role.DIRECTEUR_GENERAL, Role.PRESIDENT)
   validerN2(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: CongesUser,
@@ -122,7 +122,7 @@ export class CongesController {
     return this.conges.validerN2(id, user, dto.commentaire);
   }
 
-  /** DRH : relecture RH optionnelle avant validation finale. */
+  /** Relecture RH optionnelle avant validation finale. */
   @Post(':id/valider-drh')
   @Roles(Role.DRH, Role.DIRECTEUR_GENERAL, Role.PRESIDENT)
   validerDrh(

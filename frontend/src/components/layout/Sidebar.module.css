@@ -148,3 +148,28 @@
   background: rgba(255, 255, 255, 0.06);
   color: white;
 }
+
+@media (max-width: 1023px) {
+  .sidebar,
+  .sidebar.collapsed {
+    width: min(280px, 86vw);
+    transform: translateX(-105%);
+    transition: transform var(--transition-base);
+    box-shadow: var(--shadow-xl);
+  }
+
+  :global([dir="rtl"]) .sidebar,
+  :global([dir="rtl"]) .sidebar.collapsed {
+    transform: translateX(105%);
+  }
+
+  .sidebar:global(.mobile-open),
+  :global([dir="rtl"]) .sidebar:global(.mobile-open) {
+    transform: translateX(0);
+  }
+
+  .sidebarHeader {
+    min-height: var(--header-height);
+    padding-block: 12px;
+  }
+}

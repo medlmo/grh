@@ -30,19 +30,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (localStorage.getItem('accessToken')) {
-        try {
-          const response = await api.get('/auth/me');
-          setUser({
-            id: response.data.id,
-            email: response.data.email,
-            role: response.data.role,
-            agentId: response.data.agentId,
-            nomComplet: response.data.agent ? `${response.data.agent.prenomFr} ${response.data.agent.nomFr}` : response.data.email,
-          });
-        } catch (error) {
-          localStorage.removeItem('accessToken');
-        }
+      try {
+        const response = await api.get('/auth/me');
+        setUser({
+          id: response.data.id,
+          email: response.data.email,
+          role: response.data.role,
+          agentId: response.data.agentId,
+          nomComplet: response.data.agent ? `${response.data.agent.prenomFr} ${response.data.agent.nomFr}` : response.data.email,
+        });
+      } catch (error) {
+        setUser(null);
       }
       setIsLoading(false);
     };
@@ -52,9 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (credentials: LoginCredentials) => {
     const response = await api.post('/auth/login', credentials);
-    const { accessToken, user: userData } = response.data;
-    localStorage.setItem('accessToken', accessToken);
-    setUser(userData);
+    setUser(response.data.user);
   };
 
   const logout = async () => {
@@ -63,7 +59,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error(error);
     } finally {
-      localStorage.removeItem('accessToken');
       setUser(null);
     }
   };

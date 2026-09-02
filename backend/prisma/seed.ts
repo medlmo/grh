@@ -131,7 +131,7 @@ async function main() {
   }
 
   // --- Agents + Utilisateurs ---
-  const pwd = async (p: string) => bcrypt.hash(p, 10);
+  const pwd = async (p: string) => bcrypt.hash(p, 12);
 
   const agentDg = await prisma.agent.upsert({
     where: { matricule: 'AG-000' },

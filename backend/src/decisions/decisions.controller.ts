@@ -16,6 +16,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
+import { AuthenticatedUser } from '../common/types/authenticated-user';
 
 @Controller('decisions')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -24,13 +25,14 @@ export class DecisionsController {
 
   @Get()
   @Roles(Role.ADMIN, Role.DRH, Role.CHEF_DIVISION, Role.DIRECTEUR_GENERAL, Role.PRESIDENT)
-  findAll(@Query() query: DecisionsQueryDto) {
-    return this.decisions.findAll(query);
+  findAll(@Query() query: DecisionsQueryDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.decisions.findAll(query, user);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.decisions.findOne(id);
+  @Roles(Role.ADMIN, Role.DRH, Role.CHEF_DIVISION, Role.DIRECTEUR_GENERAL, Role.PRESIDENT)
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthenticatedUser) {
+    return this.decisions.findOne(id, user);
   }
 
   @Post()

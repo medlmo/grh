@@ -5,6 +5,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../common/types/authenticated-user';
 
 @Controller('utilisateurs')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -28,12 +30,16 @@ export class UtilisateursController {
   }
 
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUtilisateurDto) {
-    return this.utilisateursService.update(id, dto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateUtilisateurDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.utilisateursService.update(id, dto, actor.id);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.utilisateursService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: AuthenticatedUser) {
+    return this.utilisateursService.remove(id, actor.id);
   }
 }

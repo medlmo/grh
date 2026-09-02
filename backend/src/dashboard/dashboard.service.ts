@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { StatutDemande, StatutCarriere } from '@prisma/client';
+import { Prisma, StatutDemande, StatutCarriere } from '@prisma/client';
+import { AuthenticatedUser } from '../common/types/authenticated-user';
+import { StructureScopeService } from '../common/services/structure-scope.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly structureScope: StructureScopeService,
+  ) {}
 
-  async getStats() {
+  async getStats(user: AuthenticatedUser) {
     const now = new Date();
     const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
     const todayEnd   = new Date(now); todayEnd.setHours(23, 59, 59, 999);
@@ -15,6 +20,8 @@ export class DashboardService {
     // Fenêtre "départs retraite dans ≤ 2 ans" : agents ayant entre 61 et 63 ans, EN_ACTIVITE
     const retraite61 = new Date(now.getFullYear() - 61, now.getMonth(), now.getDate());
     const retraite63 = new Date(now.getFullYear() - 63, now.getMonth(), now.getDate());
+    const agentWhere = await this.structureScope.getAgentWhere(user);
+    const congeAgentWhere: Prisma.CongeWhereInput = { agent: agentWhere };
 
     const [
       totalAgents,
@@ -32,13 +39,16 @@ export class DashboardService {
       parStructureRaw,
       evolutionMensuelle,
     ] = await Promise.all([
-      this.prisma.agent.count({ where: { deletedAt: null } }),
-      this.prisma.agent.count({ where: { deletedAt: null, statutCarriere: StatutCarriere.EN_ACTIVITE } }),
-      this.prisma.agent.groupBy({ by: ['statut'],        where: { deletedAt: null }, _count: { _all: true } }),
-      this.prisma.agent.groupBy({ by: ['statutCarriere'], where: { deletedAt: null }, _count: { _all: true } }),
-      this.prisma.agent.groupBy({ by: ['sexe'],          where: { deletedAt: null }, _count: { _all: true } }),
+      this.prisma.agent.count({ where: agentWhere }),
+      this.prisma.agent.count({ where: { AND: [agentWhere, { statutCarriere: StatutCarriere.EN_ACTIVITE }] } }),
+      this.prisma.agent.groupBy({ by: ['statut'],        where: agentWhere, _count: { _all: true } }),
+      this.prisma.agent.groupBy({ by: ['statutCarriere'], where: agentWhere, _count: { _all: true } }),
+      this.prisma.agent.groupBy({ by: ['sexe'],          where: agentWhere, _count: { _all: true } }),
       this.prisma.conge.count({
-        where: { statut: { in: [StatutDemande.EN_ATTENTE_N1, StatutDemande.EN_ATTENTE_N2, StatutDemande.EN_ATTENTE_DRH] } },
+        where: {
+          ...congeAgentWhere,
+          statut: { in: [StatutDemande.EN_ATTENTE_N1, StatutDemande.EN_ATTENTE_N2, StatutDemande.EN_ATTENTE_DRH] },
+        },
       }),
       // Congés approuvés EN COURS aujourd'hui
       this.prisma.conge.count({
@@ -46,6 +56,7 @@ export class DashboardService {
           statut: StatutDemande.APPROUVEE,
           dateDebut: { lte: todayEnd },
           dateFin:   { gte: todayStart },
+          ...congeAgentWhere,
         },
       }),
       // Répartition des demandes de congés par type (exercice en cours, hors refusées/annulées)
@@ -54,29 +65,32 @@ export class DashboardService {
         where: {
           statut: { notIn: [StatutDemande.REFUSEE, StatutDemande.ANNULEE] },
           dateDebut: { gte: new Date(`${anneeEnCours}-01-01`) },
+          ...congeAgentWhere,
         },
         _count: { _all: true },
         _sum:   { nombreJours: true },
       }),
-      this.prisma.decisionAdmin.count({ where: { dateSignature: null } }),
+      this.prisma.decisionAdmin.count({ where: { dateSignature: null, agent: agentWhere } }),
       // Agents proches de la retraite : 61-63 ans, EN_ACTIVITE
       this.prisma.agent.count({
-        where: {
-          deletedAt: null,
-          statutCarriere: StatutCarriere.EN_ACTIVITE,
-          dateNaissance: { gte: retraite63, lte: retraite61 },
-        },
+        where: { AND: [
+          agentWhere,
+          {
+            statutCarriere: StatutCarriere.EN_ACTIVITE,
+            dateNaissance: { gte: retraite63, lte: retraite61 },
+          },
+        ] },
       }),
-      this.getPyramideAges(),
-      this.getRetraitesProches(),
+      this.getPyramideAges(agentWhere),
+      this.getRetraitesProches(agentWhere),
       this.prisma.agent.groupBy({
         by: ['structureId'],
-        where: { deletedAt: null },
+        where: agentWhere,
         _count: { _all: true },
         orderBy: { _count: { structureId: 'desc' } },
         take: 8,
       }),
-      this.getEvolutionMensuelle(),
+      this.getEvolutionMensuelle(agentWhere),
     ]);
 
     const structures = await this.prisma.structure.findMany();
@@ -111,65 +125,65 @@ export class DashboardService {
 
   // ─── Pyramide des âges ────────────────────────────────────────────────────
 
-  private async getPyramideAges() {
-    type Row = { tranche: string; total: bigint; hommes: bigint; femmes: bigint };
-
-    const rows = await this.prisma.$queryRaw<Row[]>`
-      SELECT
-        CASE
-          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 25 THEN '<25'
-          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 35 THEN '25-35'
-          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 45 THEN '35-45'
-          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 55 THEN '45-55'
-          WHEN EXTRACT(YEAR FROM AGE(NOW(), "dateNaissance"))::int < 60 THEN '55-60'
-          ELSE '60+'
-        END AS tranche,
-        COUNT(*)                              AS total,
-        COUNT(*) FILTER (WHERE sexe = 'M')   AS hommes,
-        COUNT(*) FILTER (WHERE sexe = 'F')   AS femmes
-      FROM "Agent"
-      WHERE "deletedAt" IS NULL
-      GROUP BY tranche
-    `;
-
-    const ORDRE = ['<25', '25-35', '35-45', '45-55', '55-60', '60+'];
-    const map = new Map(rows.map((r) => [r.tranche, r]));
-    return ORDRE.map((label) => {
-      const r = map.get(label);
-      return { tranche: label, total: r ? Number(r.total) : 0, hommes: r ? Number(r.hommes) : 0, femmes: r ? Number(r.femmes) : 0 };
+  private async getPyramideAges(agentWhere: Prisma.AgentWhereInput) {
+    const agents = await this.prisma.agent.findMany({
+      where: agentWhere,
+      select: { dateNaissance: true, sexe: true },
     });
+    const ORDRE = ['<25', '25-35', '35-45', '45-55', '55-60', '60+'];
+    const now = new Date();
+    const result = new Map(ORDRE.map((tranche) => [
+      tranche,
+      { tranche, total: 0, hommes: 0, femmes: 0 },
+    ]));
+    for (const agent of agents) {
+      const age = now.getFullYear() - agent.dateNaissance.getFullYear()
+        - (now < new Date(now.getFullYear(), agent.dateNaissance.getMonth(), agent.dateNaissance.getDate()) ? 1 : 0);
+      const tranche = age < 25 ? '<25'
+        : age < 35 ? '25-35'
+          : age < 45 ? '35-45'
+            : age < 55 ? '45-55'
+              : age < 60 ? '55-60'
+                : '60+';
+      const row = result.get(tranche)!;
+      row.total += 1;
+      if (agent.sexe === 'M') row.hommes += 1;
+      if (agent.sexe === 'F') row.femmes += 1;
+    }
+    return ORDRE.map((tranche) => result.get(tranche)!);
   }
 
   // ─── Évolution mensuelle des demandes (12 derniers mois) ─────────────────
 
-  private async getEvolutionMensuelle() {
-    type Row = { mois: Date; total: bigint };
-    const rows = await this.prisma.$queryRaw<Row[]>`
-      SELECT
-        DATE_TRUNC('month', "createdAt") AS mois,
-        COUNT(*) AS total
-      FROM "Conge"
-      WHERE "createdAt" >= NOW() - INTERVAL '12 months'
-      GROUP BY mois
-      ORDER BY mois ASC
-    `;
-    return rows.map((r) => ({
-      mois:  r.mois.toISOString().slice(0, 7), // "2026-01"
-      total: Number(r.total),
-    }));
+  private async getEvolutionMensuelle(agentWhere: Prisma.AgentWhereInput) {
+    const since = new Date();
+    since.setMonth(since.getMonth() - 12);
+    const conges = await this.prisma.conge.findMany({
+      where: { createdAt: { gte: since }, agent: agentWhere },
+      select: { createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    const totals = new Map<string, number>();
+    for (const conge of conges) {
+      const mois = conge.createdAt.toISOString().slice(0, 7);
+      totals.set(mois, (totals.get(mois) ?? 0) + 1);
+    }
+    return [...totals.entries()].map(([mois, total]) => ({ mois, total }));
   }
 
   // ─── Départs à la retraite prochains ──────────────────────────────────────
 
-  private async getRetraitesProches() {
+  private async getRetraitesProches(agentWhere: Prisma.AgentWhereInput) {
     const now = new Date();
     const agents = await this.prisma.agent.findMany({
-      where: {
-        deletedAt: null,
-        statutCarriere: StatutCarriere.EN_ACTIVITE,
-        // ≥ 58 ans → retraite dans ≤ 5 ans (à 63 ans)
-        dateNaissance: { lte: new Date(now.getFullYear() - 58, now.getMonth(), now.getDate()) },
-      },
+      where: { AND: [
+        agentWhere,
+        {
+          statutCarriere: StatutCarriere.EN_ACTIVITE,
+          // ≥ 58 ans → retraite dans ≤ 5 ans (à 63 ans)
+          dateNaissance: { lte: new Date(now.getFullYear() - 58, now.getMonth(), now.getDate()) },
+        },
+      ] },
       select: {
         id: true, matricule: true, nomFr: true, prenomFr: true,
         dateNaissance: true,

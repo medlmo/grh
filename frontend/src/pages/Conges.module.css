@@ -1,4 +1,19 @@
 /* Conges — page wrapper scoped */
 .page {
-  /* Scoped page wrapper — no global collision */
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .page :global(.tabs .tab) {
+    min-width: max-content;
+  }
+
+  .page :global(.card-body.flex) {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .page :global(.card-body.flex > .btn) {
+    width: 100%;
+  }
 }

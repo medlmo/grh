@@ -31,7 +31,28 @@
   .columns { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-  .columns { grid-template-columns: 1fr; }
+  .columns {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .colBody {
+    max-height: 300px;
+  }
+
+  .row {
+    min-height: 44px;
+  }
+
+  .rowActions {
+    opacity: 1;
+  }
+
+  .actionBtn,
+  .addBtn {
+    width: 34px;
+    height: 34px;
+  }
 }
 
 /* ── Column ──────────────────────────────────────────────────────────────────── */

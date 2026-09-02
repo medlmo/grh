@@ -4,6 +4,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../common/types/authenticated-user';
 
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -12,7 +14,7 @@ export class DashboardController {
 
   @Get()
   @Roles(Role.ADMIN, Role.DRH, Role.DIRECTEUR_GENERAL, Role.PRESIDENT, Role.CHEF_DIVISION, Role.CHEF_SERVICE)
-  getStats() {
-    return this.dashboard.getStats();
+  getStats(@CurrentUser() user: AuthenticatedUser) {
+    return this.dashboard.getStats(user);
   }
 }

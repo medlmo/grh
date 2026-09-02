@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUtilisateurDto, UpdateUtilisateurDto, UtilisateursQueryDto } from './dto/utilisateur.dto';
 import * as bcrypt from 'bcryptjs';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role, StatutCompte } from '@prisma/client';
 
 @Injectable()
 export class UtilisateursService {
@@ -57,7 +57,7 @@ export class UtilisateursService {
     const existing = await this.prisma.utilisateur.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Cet email est déjà utilisé');
 
-    const hashedPassword = await bcrypt.hash(dto.motDePasse, 10);
+    const hashedPassword = await bcrypt.hash(dto.motDePasse, 12);
     
     return this.prisma.utilisateur.create({
       data: {
@@ -73,8 +73,15 @@ export class UtilisateursService {
     });
   }
 
-  async update(id: number, dto: UpdateUtilisateurDto) {
-    await this.findOne(id);
+  async update(id: number, dto: UpdateUtilisateurDto, actorId: number) {
+    const target = await this.findOne(id);
+
+    if (target.role === Role.ADMIN && target.id !== actorId) {
+      throw new ForbiddenException("Un administrateur ne peut pas modifier le compte d'un autre administrateur.");
+    }
+    if (target.id === actorId && (dto.role !== undefined || dto.statut !== undefined)) {
+      throw new ForbiddenException("Un administrateur ne peut pas modifier son propre rôle ou statut.");
+    }
 
     const data: Prisma.UtilisateurUpdateInput = {};
     if (dto.email !== undefined) data.email = dto.email;
@@ -83,7 +90,10 @@ export class UtilisateursService {
     if (dto.agentId !== undefined) {
       data.agent = { connect: { id: dto.agentId } };
     }
-    if (dto.motDePasse) data.motDePasse = await bcrypt.hash(dto.motDePasse, 10);
+    if (dto.motDePasse) data.motDePasse = await bcrypt.hash(dto.motDePasse, 12);
+    if (dto.statut !== undefined && dto.statut !== StatutCompte.ACTIF) {
+      data.refreshToken = null;
+    }
     
     if (dto.email) {
       const existing = await this.prisma.utilisateur.findUnique({ where: { email: dto.email } });
@@ -104,8 +114,14 @@ export class UtilisateursService {
     });
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(id: number, actorId: number) {
+    const target = await this.findOne(id);
+    if (target.id === actorId) {
+      throw new ForbiddenException('Un administrateur ne peut pas supprimer son propre compte.');
+    }
+    if (target.role === Role.ADMIN) {
+      throw new ForbiddenException("Un administrateur ne peut pas supprimer le compte d'un autre administrateur.");
+    }
     return this.prisma.utilisateur.delete({ where: { id } });
   }
 }

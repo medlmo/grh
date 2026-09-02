@@ -1,4 +1,16 @@
 /* AgentForm — page wrapper scoped */
 .page {
-  /* Scoped page wrapper — no global collision */
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .page :global(.stats-grid-agents) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .page :global(.form-section-title) {
+    align-items: flex-start;
+    line-height: 1.35;
+  }
 }

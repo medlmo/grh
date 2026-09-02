@@ -741,11 +741,29 @@ a.contact-card-link:hover .contact-card {
   }
 
   .tabs-enhanced {
-    padding: 0 12px;
+    padding: 0 8px;
+    max-width: 100%;
   }
 
   .tabs-enhanced .tab {
     padding: 12px 10px;
     font-size: 12px;
+  }
+
+  .tab-content {
+    padding: 14px;
+  }
+
+  .profile-contact-card {
+    padding: 16px;
+  }
+
+  .profile-quick-info {
+    margin-inline: 12px;
+    padding-inline: 8px;
+  }
+
+  .profile-contact-item {
+    overflow-wrap: anywhere;
   }
 }

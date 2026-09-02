@@ -326,6 +326,8 @@
 @media (max-width: 768px) {
   .agents-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
   }
 
   .advanced-filters-grid {
@@ -339,5 +341,41 @@
 
   .agents-filter-header .search-input {
     max-width: 100%;
+  }
+
+  .agents-filter-header {
+    padding: 12px;
+  }
+
+  .agents-filter-header .btn-advanced-filters {
+    width: 100%;
+  }
+
+  .view-toggle {
+    align-self: flex-end;
+  }
+
+  .advanced-filters-panel {
+    padding: 14px;
+  }
+
+  .advanced-filters-header {
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .agent-card {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .agents-grid {
+    padding: 10px;
+  }
+
+  .agent-card-top {
+    align-items: flex-start;
   }
 }

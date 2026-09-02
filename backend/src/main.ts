@@ -5,10 +5,21 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import helmet from 'helmet';
 
 async function bootstrap() {
+  const corsLogger = new Logger('CORS');
   const corsOrigins = (process.env.CORS_ORIGIN ?? '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+  const replitDomains = [process.env.REPLIT_DEV_DOMAIN, ...(process.env.REPLIT_DOMAINS ?? '').split(',')]
+    .filter((domain): domain is string => Boolean(domain))
+    .map((domain) => domain.trim().replace(/^https?:\/\//, '').replace(/\/$/, ''))
+    .filter(Boolean);
+  for (const domain of replitDomains) {
+    for (const protocol of ['http', 'https']) {
+      const origin = `${protocol}://${domain}`;
+      if (!corsOrigins.includes(origin)) corsOrigins.push(origin);
+    }
+  }
 
   if (
     corsOrigins.length === 0 ||
@@ -32,6 +43,7 @@ async function bootstrap() {
         callback(null, true);
         return;
       }
+      corsLogger.warn(`Origine refusée: ${origin}`);
       callback(new Error('Origine CORS non autorisée.'), false);
     },
     credentials: true,

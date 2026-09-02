@@ -36,7 +36,7 @@ const ValidationTab: React.FC<ValidationTabProps> = ({
         </button>
       );
     }
-    if (conge.statut === 'EN_ATTENTE_N2' && ['DIRECTEUR_GENERAL', 'DRH', 'PRESIDENT'].includes(userRole)) {
+    if (conge.statut === 'EN_ATTENTE_N2' && ['DIRECTEUR_GENERAL', 'PRESIDENT'].includes(userRole)) {
       actions.push(
         <button
           key="n2"

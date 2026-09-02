@@ -1,4 +1,4 @@
 /* Comptes — page wrapper scoped */
 .page {
-  /* Scoped page wrapper — no global collision */
+  min-width: 0;
 }

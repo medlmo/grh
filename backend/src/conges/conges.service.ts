@@ -35,7 +35,8 @@ const GLOBAL_CONGE_ROLES: string[] = [
 ];
 
 const N1_ROLES = [Role.CHEF_SERVICE, Role.CHEF_DIVISION];
-const N2_ROLES = [Role.DRH, Role.DIRECTEUR_GENERAL, Role.PRESIDENT];
+const N2_ROLES = [Role.DIRECTEUR_GENERAL, Role.PRESIDENT];
+const DRH_VALIDATION_ROLES = [Role.DRH, Role.DIRECTEUR_GENERAL, Role.PRESIDENT];
 const CONGE_CREATION_PRIVILEGED_ROLES: Role[] = [Role.ADMIN, Role.DRH];
 
 export interface CongeFilters {
@@ -389,7 +390,7 @@ export class CongesService {
       conge.statut, [StatutDemande.EN_ATTENTE_DRH],
       "Cette demande n'est pas en attente DRH.",
     );
-    await this.assertCanValidate(user, conge.agent.structureId, 'N2');
+    await this.assertCanValidate(user, conge.agent.structureId, 'DRH');
 
     return this.prisma.$transaction(async (tx) => {
       const transition = await tx.conge.updateMany({
@@ -415,7 +416,11 @@ export class CongesService {
     await this.assertCanValidate(
       user,
       conge.agent.structureId,
-      conge.statut === StatutDemande.EN_ATTENTE_N1 ? 'N1' : 'N2',
+      conge.statut === StatutDemande.EN_ATTENTE_N1
+        ? 'N1'
+        : conge.statut === StatutDemande.EN_ATTENTE_DRH
+          ? 'DRH'
+          : 'N2',
     );
 
     return this.prisma.$transaction(async (tx) => {
@@ -505,6 +510,7 @@ export class CongesService {
 
   private statutsPourRole(role: Role): StatutDemande[] {
     if ((N1_ROLES as readonly string[]).includes(role)) return [StatutDemande.EN_ATTENTE_N1];
+    if (role === Role.DRH) return [StatutDemande.EN_ATTENTE_DRH];
     if ((N2_ROLES as readonly string[]).includes(role)) return [StatutDemande.EN_ATTENTE_N2, StatutDemande.EN_ATTENTE_DRH];
     return [];
   }
@@ -526,9 +532,15 @@ export class CongesService {
   private async assertCanValidate(
     user: CongesUser,
     targetStructureId: number | null,
-    niveau: 'N1' | 'N2',
+    niveau: 'N1' | 'N2' | 'DRH',
   ): Promise<void> {
     const role = user.role as Role;
+    if (niveau === 'DRH') {
+      if (!(DRH_VALIDATION_ROLES as readonly Role[]).includes(role)) {
+        throw new ForbiddenException("Vous n'êtes pas autorisé à valider cette étape.");
+      }
+      return;
+    }
     if (niveau === 'N2') {
       if (!(N2_ROLES as readonly Role[]).includes(role)) {
         throw new ForbiddenException("Vous n'êtes pas autorisé à valider cette étape.");

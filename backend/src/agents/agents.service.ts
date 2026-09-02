@@ -8,13 +8,20 @@ import {
   AgentsQueryDto,
 } from './dto/agent.dto';
 import { Prisma, StatutAgent } from '@prisma/client';
+import { AuthenticatedUser } from '../common/types/authenticated-user';
+import { StructureScopeService } from '../common/services/structure-scope.service';
 
 @Injectable()
 export class AgentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly structureScope: StructureScopeService,
+  ) {}
 
-  async findAll(params: AgentsQueryDto) {
-    const where: Prisma.AgentWhereInput = { deletedAt: null };
+  async findAll(params: AgentsQueryDto, user: AuthenticatedUser) {
+    const where: Prisma.AgentWhereInput = {
+      AND: [await this.structureScope.getAgentWhere(user)],
+    };
     if (params?.statut) where.statut = params.statut;
     if (params?.structureId) where.structureId = Number(params.structureId);
     if (params?.search) {
@@ -53,9 +60,11 @@ export class AgentsService {
     return this.paginate(data, total, params.page, params.limit);
   }
 
-  async findOne(id: number) {
-    const agent = await this.prisma.agent.findUnique({
-      where: { id },
+  async findOne(id: number, user?: AuthenticatedUser) {
+    const agent = await this.prisma.agent.findFirst({
+      where: user
+        ? { AND: [{ id }, await this.structureScope.getAgentWhere(user)] }
+        : { id, deletedAt: null },
       include: {
         structure: true,
         grade: { include: { echelons: true } },
@@ -67,8 +76,11 @@ export class AgentsService {
         piecesJointes: true,
       },
     });
-    if (!agent || agent.deletedAt) throw new NotFoundException('Agent introuvable.');
-    return agent;
+    if (!agent) throw new NotFoundException('Agent introuvable.');
+    return {
+      ...agent,
+      piecesJointes: agent.piecesJointes.map(({ chemin: _chemin, ...piece }) => piece),
+    };
   }
 
   async create(dto: CreateAgentDto) {
@@ -142,8 +154,8 @@ export class AgentsService {
   }
 
   // Calcul d'ancienneté en années
-  async anciennete(agentId: number) {
-    const agent = await this.findOne(agentId);
+  async anciennete(agentId: number, user?: AuthenticatedUser) {
+    const agent = await this.findOne(agentId, user);
     const now = Date.now();
     const years = (now - agent.dateRecrutement.getTime()) / (365.25 * 24 * 3600 * 1000);
     return { annees: Math.floor(years), mois: Math.floor((years % 1) * 12) };

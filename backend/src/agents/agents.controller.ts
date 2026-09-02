@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
-  ForbiddenException,
 } from '@nestjs/common';
 import { AgentsService } from './agents.service';
 import {
@@ -22,18 +21,9 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { Role, StatutAgent } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../common/types/authenticated-user';
-
-const PRIVILEGED_ROLES: Role[] = [
-  Role.ADMIN,
-  Role.DRH,
-  Role.CHEF_DIVISION,
-  Role.CHEF_SERVICE,
-  Role.DIRECTEUR_GENERAL,
-  Role.PRESIDENT,
-];
 
 @Controller('agents')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,15 +31,13 @@ export class AgentsController {
   constructor(private agents: AgentsService) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.DRH, Role.DIRECTEUR_GENERAL)
-  findAll(@Query() query: AgentsQueryDto) {
-    return this.agents.findAll(query);
+  findAll(@Query() query: AgentsQueryDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.agents.findAll(query, user);
   }
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthenticatedUser) {
-    this.assertCanAccessAgent(id, user);
-    return this.agents.findOne(id);
+    return this.agents.findOne(id, user);
   }
 
   @Post()
@@ -72,8 +60,7 @@ export class AgentsController {
 
   @Get(':id/anciennete')
   anciennete(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthenticatedUser) {
-    this.assertCanAccessAgent(id, user);
-    return this.agents.anciennete(id);
+    return this.agents.anciennete(id, user);
   }
 
   @Post(':id/carriere')
@@ -101,11 +88,5 @@ export class AgentsController {
     @Param('pieceId', ParseIntPipe) pieceId: number,
   ) {
     return this.agents.removePiece(id, pieceId);
-  }
-
-  private assertCanAccessAgent(id: number, user: AuthenticatedUser): void {
-    if (PRIVILEGED_ROLES.includes(user.role)) return;
-    if (user.role === Role.AGENT && user.agentId === id) return;
-    throw new ForbiddenException("Vous n'êtes pas autorisé à consulter ce dossier.");
   }
 }

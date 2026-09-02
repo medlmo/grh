@@ -1,4 +1,14 @@
 /* Parametrage — page wrapper scoped */
 .page {
-  /* Scoped page wrapper — no global collision */
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .page :global(.card-body) {
+    padding: 12px;
+  }
+
+  .page :global(.settings-nav-item) {
+    min-height: 44px;
+  }
 }

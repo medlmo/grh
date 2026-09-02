@@ -1,4 +1,14 @@
 /* Dashboard — page wrapper scoped */
 .page {
-  /* Scoped page wrapper — no global collision */
+  min-width: 0;
+}
+
+.kpiGrid {
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -240,7 +240,7 @@ const FeriesTab: React.FC = () => {
       <div className={`${styles['feries-stats']}`}>
         {statCards.map(card => (
           <div key={card.key} className={`${styles['feries-stat']}`}>
-            <div className={`feries-stat-icon ${card.color}`}>{card.icon}</div>
+            <div className={`${styles['feries-stat-icon']} ${styles[card.color]}`}>{card.icon}</div>
             <div className={`${styles['feries-stat-content']}`}>
               <span className={`${styles['feries-stat-value']}`}>{card.value}</span>
               <span className={`${styles['feries-stat-label']}`}>
@@ -266,7 +266,7 @@ const FeriesTab: React.FC = () => {
                 return (
                   <div
                     key={month}
-                    className={`feries-month-card ${items.length === 0 ? 'empty' : ''}`}
+                    className={`${styles['feries-month-card']} ${items.length === 0 ? styles.empty : ''}`}
                   >
                     <div className={`${styles['feries-month-header']}`}>
                       <span className={`${styles['feries-month-name']}`}>{monthNames[month]}</span>
@@ -279,7 +279,7 @@ const FeriesTab: React.FC = () => {
                         {items.map(f => (
                           <div key={f.id} className={`${styles['feries-month-item']}`}>
                             <span
-                              className={`feries-month-dot ${f.estMobile ? 'mobile' : 'is-fixed'}`}
+                              className={`${styles['feries-month-dot']} ${styles[f.estMobile ? 'mobile' : 'is-fixed']}`}
                             />
                             <span className={`${styles['feries-month-day']}`}>
                               {format(parseISO(f.date), 'dd')}
@@ -319,7 +319,7 @@ const FeriesTab: React.FC = () => {
                 {(['all', 'fixed', 'mobile'] as TypeFilter[]).map(type => (
                   <button
                     key={type}
-                    className={`feries-filter-pill ${typeFilter === type ? 'active' : ''}`}
+                    className={`${styles['feries-filter-pill']} ${typeFilter === type ? styles.active : ''}`}
                     onClick={() => setTypeFilter(type)}
                   >
                     {t(`holidays.type_${type}`)}
@@ -415,12 +415,12 @@ const FeriesTab: React.FC = () => {
                               <td className="text-gray-700 font-medium">
                                 {f.libelleFr}
                               </td>
-                              <td className={`feries-label-ar ${isRtl ? 'text-right' : 'text-right'}`}>
+                              <td className={`${styles['feries-label-ar']} text-right`}>
                                 {f.libelleAr}
                               </td>
                               <td>
                                 <span
-                                  className={`feries-type-badge ${f.estMobile ? 'mobile' : 'is-fixed'}`}
+                                  className={`${styles['feries-type-badge']} ${styles[f.estMobile ? 'mobile' : 'is-fixed']}`}
                                 >
                                   {f.estMobile
                                     ? t('holidays.mobile')
@@ -536,7 +536,7 @@ const FeriesTab: React.FC = () => {
 
                   <div className={`${styles['form-group-full']}`}>
                     <label
-                      className={`feries-toggle ${form.estMobile ? 'bg-primary-50 border-primary-300' : ''}`}
+                      className={`${styles['feries-toggle']} ${form.estMobile ? 'bg-primary-50 border-primary-300' : ''}`}
                     >
                       <input
                         type="checkbox"

@@ -82,8 +82,16 @@ export class AuthService {
       const payload = await this.jwt.verifyAsync(token);
       const user = await this.prisma.utilisateur.findUnique({
         where: { id: payload.sub },
+        include: { agent: { select: { deletedAt: true } } },
       });
       if (!user || !user.refreshToken || user.refreshToken !== this.hashToken(token)) {
+        throw new UnauthorizedException();
+      }
+      if (user.statut !== StatutCompte.ACTIF || user.agent?.deletedAt) {
+        await this.prisma.utilisateur.update({
+          where: { id: user.id },
+          data: { refreshToken: null },
+        });
         throw new UnauthorizedException();
       }
       const newPayload = { sub: user.id, email: user.email, role: user.role, agentId: user.agentId };

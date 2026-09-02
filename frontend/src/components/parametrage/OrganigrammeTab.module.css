@@ -315,3 +315,64 @@
   color: var(--text-muted);
   margin-top: 4px;
 }
+
+@media (max-width: 768px) {
+  .toolbar {
+    align-items: flex-start;
+  }
+
+  .toolbar-stats,
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-actions > button {
+    flex: 1 1 auto;
+  }
+
+  .node-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 10px 6px;
+  }
+
+  .node-info {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .node-label,
+  .node-label-ar {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .node-code {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .node-actions {
+    width: 100%;
+    justify-content: flex-end;
+    opacity: 1;
+    margin-inline-start: 26px;
+  }
+
+  .action-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .node-children {
+    padding-inline-start: 14px;
+    margin-inline-start: 8px;
+  }
+
+  .fm-header {
+    padding: 16px;
+  }
+}
